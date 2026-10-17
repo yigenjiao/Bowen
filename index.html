@@ -222,6 +222,41 @@ h1 em{font-style:italic;color:var(--ember);font-family:"Fraunces",var(--serif)}
 .way:hover{border-color:var(--amber);background:rgba(201,138,43,.07)}
 .way span{font-family:var(--mono);font-size:12px;color:var(--faint);letter-spacing:.08em}
 .way b{font-family:var(--mono);font-weight:500;font-size:13px;color:var(--text)}
+.way-btn{width:100%;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.way-btn b i{font-style:normal;font-size:11px;color:var(--faint);margin-left:12px;letter-spacing:.04em}
+.way-btn:hover b i{color:var(--amber)}
+
+.qr-modal{
+  position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;
+  padding:24px;opacity:0;visibility:hidden;transition:opacity .3s,visibility .3s;
+}
+.qr-modal.open{opacity:1;visibility:visible}
+.qr-backdrop{position:absolute;inset:0;background:rgba(5,4,3,.84);backdrop-filter:blur(8px)}
+.qr-card{
+  position:relative;background:#16130f;border:1px solid var(--line-2);border-radius:16px;
+  padding:34px 30px 26px;width:100%;max-width:332px;text-align:center;
+  transform:translateY(16px) scale(.97);transition:transform .32s cubic-bezier(.2,.7,.3,1);
+  box-shadow:0 40px 90px -30px rgba(0,0,0,.9);
+}
+.qr-modal.open .qr-card{transform:none}
+.qr-x{
+  position:absolute;top:10px;right:12px;background:none;border:0;color:var(--faint);
+  font-size:22px;line-height:1;cursor:pointer;padding:6px 8px;font-family:var(--sans);border-radius:6px;
+}
+.qr-x:hover{color:var(--text);background:rgba(255,255,255,.06)}
+.qr-head{font-family:var(--serif);font-size:1.06rem;margin-bottom:20px;color:var(--text)}
+.qr-frame{
+  background:#fff;border-radius:10px;padding:12px;margin-bottom:18px;
+  aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;overflow:hidden;
+}
+.qr-frame img{width:100%;height:100%;object-fit:contain;border-radius:4px;display:none}
+.qr-miss{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  color:#8a7c69;font-family:var(--mono);font-size:11.5px;line-height:2;padding:0 8px;
+}
+.qr-miss code{color:#a8742a;font-size:11px;word-break:break-all}
+.qr-id{font-family:var(--mono);font-size:15px;letter-spacing:.06em;color:var(--text);margin-bottom:6px}
+.qr-tip{font-size:12.5px;color:var(--faint)}
 
 footer{border-top:1px solid var(--line);padding:40px 0;margin-top:0}
 .foot-inner{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
@@ -409,7 +444,10 @@ footer{border-top:1px solid var(--line);padding:40px 0;margin-top:0}
       <div class="ways">
         <a class="way" href="https://github.com/yigenjiao" target="_blank" rel="noopener"><span>GITHUB</span><b>github.com/yigenjiao</b></a>
         <a class="way" href="mailto:shiboxun123@gmail.com"><span>EMAIL</span><b>shiboxun123@gmail.com</b></a>
-        <div class="way"><span>WECHAT</span><b>13804998790</b></div>
+        <button class="way way-btn" type="button" id="qrOpen">
+          <span>WECHAT</span>
+          <b>13804998790<i>查看二维码</i></b>
+        </button>
       </div>
     </div>
   </div>
@@ -421,6 +459,20 @@ footer{border-top:1px solid var(--line);padding:40px 0;margin-top:0}
     <p>Built as a single static page · Hosted on GitHub Pages</p>
   </div>
 </footer>
+
+<div class="qr-modal" id="qrModal" role="dialog" aria-modal="true" aria-label="微信二维码" aria-hidden="true">
+  <div class="qr-backdrop" data-qr-close></div>
+  <div class="qr-card">
+    <button class="qr-x" type="button" data-qr-close aria-label="关闭">&times;</button>
+    <div class="qr-head">扫码加我微信</div>
+    <div class="qr-frame">
+      <img id="qrImg" alt="Bowen 的微信二维码">
+      <div class="qr-miss" id="qrMiss">二维码准备中<br>请先用下方手机号添加</div>
+    </div>
+    <div class="qr-id">13804998790</div>
+    <p class="qr-tip">也可以直接用手机号搜索添加</p>
+  </div>
+</div>
 
 <script>
 (function(){
@@ -493,6 +545,38 @@ footer{border-top:1px solid var(--line);padding:40px 0;margin-top:0}
     panel.innerHTML = '<h3>' + s.n + ' · ' + s.name + '</h3><p>' + s.desc + '</p><code>' + s.code + '</code>';
   }
   select(5);
+
+  var qrModal = document.getElementById('qrModal');
+  var qrBtn   = document.getElementById('qrOpen');
+  var qrImg   = document.getElementById('qrImg');
+  var qrMiss  = document.getElementById('qrMiss');
+  var QR_SRC  = ['assets/wechat-qr.png','assets/wechat-qr.jpg','assets/wechat-qr.jpeg','assets/wechat-qr.webp'];
+  var qrIdx   = 0;
+
+  function qrState(ok){
+    qrImg.style.display = ok ? 'block' : 'none';
+    qrMiss.style.display = ok ? 'none' : 'flex';
+  }
+  function qrNext(){
+    if(qrIdx >= QR_SRC.length){ qrState(false); return; }
+    qrImg.src = QR_SRC[qrIdx++];
+  }
+  qrImg.addEventListener('load', function(){ qrState(true); });
+  qrImg.addEventListener('error', qrNext);
+  qrNext();
+
+  function qrSet(open){
+    qrModal.classList.toggle('open', open);
+    qrModal.setAttribute('aria-hidden', open ? 'false' : 'true');
+    document.body.style.overflow = open ? 'hidden' : '';
+  }
+  qrBtn.addEventListener('click', function(){ qrSet(true); });
+  qrModal.querySelectorAll('[data-qr-close]').forEach(function(el){
+    el.addEventListener('click', function(){ qrSet(false); });
+  });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && qrModal.classList.contains('open')) qrSet(false);
+  });
 
   document.getElementById('yr').textContent = new Date().getFullYear();
 })();
