@@ -417,6 +417,44 @@ Township 包的其他差异：
 - UV 修复的验证方法：按顶点高度分组（树冠/树干）分别采样贴图颜色，比整 mesh 平均色更能定位问题。
 - SMR（如蛋机里的鸡）可能藏在场景任意深度的巢位节点下，漏导的表现是"场景里有鸡窝没鸡"。
 
+### 11. 内联 brotli 变体 + 三个必踩的坑（2026-10-19 经营跳楼机_appLovin 实战）
+
+**包型**：不用 base122，而是 `decompressString / decompressArrayBuffer("<b64>", isBase122=false, size)` + `unbrotli`（= brotli）。资源全内联在三个槽里：
+
+- `window.jsons["assets/bundles/-1/bundle.json"]`（主清单，本例 3.4 MB：meshes/materials/textures/sprites/scenes/prefabs/animation-clips）
+- `window.blobs["assets/bundles/-1/data.blob"]`（顶点+索引二进制）
+- `window.sounds["assets/bundles/-1/xxx.mp3"]`
+- 贴图是 86 个 `<img id="assets/bundles/-1/<texId>.png" src="data:image/png;base64,...">` —— **img 的 id 就是贴图路径**，直接按 id 落盘即可，不用再找映射。
+
+**省一半时间的一步**：引擎 JS 里有完整 DTO 字段索引表，直接 grep 一次拿全，不要靠猜：
+
+```bash
+grep -o "Material\":{[^}]*}" engine.js
+grep -o "Components\.\(MeshRenderer\|MeshFilter\|SkinnedMeshRenderer\|SpriteRenderer\)\":{[^}]*}" engine.js
+```
+
+本例拿到的：`Material {name:0, shader:1, renderQueue:3, enableInstancing:4, floatParameters:5, colorParameters:6, vectorParameters:7, textureParameters:8, materialFlags:9}`、`MeshFilter {sharedMesh:0}`、`MeshRenderer {additionalVertexStreams:0, enabled:2, sharedMaterial:3, sharedMaterials:5, ...}`。
+引用对格式是 `[typeRef, id]` 占两个槽，所以 `sharedMesh:0` → `data[0]=4, data[1]=meshId`。
+
+**坑 1：`bindposes` 是列主序**（`flat[c*4+r] = M[r][c]`，平移在 `[12..14]`）。
+按行切 `bps[i*16 + r*4 : +4]` 会得到转置矩阵 → 蒙皮顶点炸成大数甚至 NaN。
+正确写法：`BP = [[bps[i*16 + c*4 + r] for c in range(4)] for r in range(4)]`。
+
+**坑 2：accessor 落盘必须按声明的 componentType 转 dtype**。
+烘焙结果是 float64，直接 `nd.tobytes()` 会写 8 字节/分量，而 accessor 声称 `componentType=5126`(float32) → 读出来**整片都是 NaN**，且报错信息完全指不到这里。
+统一在写 accessor 的入口做：`nd = np.ascontiguousarray(np.asarray(nd, dtype=np.float32))`（u32/u16 同理）。
+
+**坑 3：不要盲目导出 COLOR_0**。
+本例顶点色是建模残留：`YuanHuan` 顶点色纯红 (0.82,0,0)、`polySurface2` 有 (0,0,0,0) 全黑，而 Unity 侧 shader 根本不采样。
+glTF 规范里 COLOR_0 一定与 baseColor 相乘 → 蓝贴图的柱子渲染成红色、部分模型整块发黑。
+判据：材质里没有顶点色相关 keyword / 属性时，直接不写 COLOR_0。（Township 的树是反例，那种要保留。）
+
+**坑 4：GLB 的 `buffer` 不能带 `uri`**，否则 three.js / Blender 会去外部找 bin 而报 "Failed to load buffer"。写 GLB 前 `gltf['buffers'][0].pop('uri', None)`；gltf+bin 那份再补回去。
+
+**结构简化点**：本包 3385 个对象**全部带显式 Transform**（3296 个 `type 2` + 89 个 `type 9` RectTransform），不需要 Township 那种 transform 池，按父链累乘即可。
+
+**2D 精灵要隔离**：`SpriteRenderer`（游客、排队人群、升级特效）是平面贴图，导出成 quad 并把节点名加 `[Sprite]` 前缀，Blender 里一搜就能整组隐藏；同时要用 **sprite 自己的 texture** 建材质（`sprite.data[2]`），别复用它的 UI 默认材质，否则全白。
+
 ## Cocos Creator 3.x 包补充流程
 
 部分 DataEye  playable 使用 Cocos Creator 3.8.5+，资源以 assetmap 形式打包（非 Luna 私有格式）。处理流程如下：
