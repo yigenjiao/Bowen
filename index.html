@@ -429,6 +429,12 @@ footer{border-top:1px solid var(--line);padding:40px 0;margin-top:0}
         <p>把既有射击玩法从暗色主题整体改版为明亮嘉年华风格：重制美术资产、调整配色与靶点交互，形成完整出图与素材替换流程。</p>
         <div class="res">输出：替换资产包 + 出图工作流</div>
       </div>
+      <div class="case">
+        <div class="k">CASE 04 · 单文件包实测</div>
+        <h3>从 8MB 单文件网页里导出 3732 个模型</h3>
+      <p>8MB 单文件 playable 网页，3776 个节点，导出 3732 个模型 / 1187 个实例 / 21926 个去重面 / 29 个材质，交付 2.3MB GLB。验收：引擎世界包围盒（AABB）与 Blender 对账一致，多视角渲染目检通过。关键点：base122 内联 + Brotli 压缩；data URL 前缀不剥贴图全废；材质按 pass 取错就没贴图；骨骼用当前姿态烘焙。</p>
+        <div class="res">输出：GLB + 贴图集 + 节点结构表</div>
+      </div>
     </div>
   </div>
 </section>
