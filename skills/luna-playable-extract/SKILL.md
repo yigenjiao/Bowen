@@ -1,15 +1,15 @@
-\---  
-name: luna-playable-extract  
-title: "luna-playable-extract"  
-summary: "从 Luna / DataEye 试玩广告 HTML 中提取模型、贴图，并在可行时绑定材质、还原场景摆放、导出 Blender 可用 GLB/OBJ。"  
-description: "This skill should be used when the user provides a Luna/DataEye/playable ad HTML file and wants to extract 3D models, all scene textures, bind materials, reconstruct scene placement, or export assets for Blender/Unity. It captures the proven workflow for Brotli/base64/base122 resource extraction, mesh buffer decoding, material-texture mapping, static scene reconstruction, and GLB packaging."  
-read_when:  
-  \- 用户给了一个试玩广告 / playable ad 的 HTML 文件，想提取模型或贴图  
-  \- 文件是 Luna Labs / DataEye / 广告平台导出的自包含 HTML 或 live HTML  
-  \- 用户想在 Blender / Unity 里复用试玩里的 3D 资源  
-  \- 用户要求绑定材质贴图、还原场景位置、导出 GLB/GLTF/OBJ  
-agent_created: true  
-\---
+---
+name: luna-playable-extract
+title: "luna-playable-extract"
+summary: "从 Luna / DataEye 试玩广告 HTML 中提取模型、贴图，并在可行时绑定材质、还原场景摆放、导出 Blender 可用 GLB/OBJ。"
+description: "This skill should be used when the user provides a Luna/DataEye/playable ad HTML file and wants to extract 3D models, all scene textures, bind materials, reconstruct scene placement, or export assets for Blender/Unity. It captures the proven workflow for Brotli/base64/base122 resource extraction, mesh buffer decoding, material-texture mapping, static scene reconstruction, and GLB packaging."
+read_when:
+  - 用户给了一个试玩广告 / playable ad 的 HTML 文件，想提取模型或贴图
+  - 文件是 Luna Labs / DataEye / 广告平台导出的自包含 HTML 或 live HTML
+  - 用户想在 Blender / Unity 里复用试玩里的 3D 资源
+  - 用户要求绑定材质贴图、还原场景位置、导出 GLB/GLTF/OBJ
+agent_created: true
+---
 
 # Luna / DataEye 试玩广告资源提取工作流
 
@@ -454,6 +454,161 @@ glTF 规范里 COLOR_0 一定与 baseColor 相乘 → 蓝贴图的柱子渲染�
 **结构简化点**：本包 3385 个对象**全部带显式 Transform**（3296 个 `type 2` + 89 个 `type 9` RectTransform），不需要 Township 那种 transform 池，按父链累乘即可。
 
 **2D 精灵要隔离**：`SpriteRenderer`（游客、排队人群、升级特效）是平面贴图，导出成 quad 并把节点名加 `[Sprite]` 前缀，Blender 里一搜就能整组隐藏；同时要用 **sprite 自己的 texture** 建材质（`sprite.data[2]`），别复用它的 UI 默认材质，否则全白。
+
+### 12. Luna / Soyoo base122 + brotli 内联变体（2026-10-30 diy 泳圈 / LAST ASYLUM 实战）
+
+**包型**（第六种，与 11 的区别是**用 base122 而不是 base64**，而且解出来还有一层 brotli）：
+
+```
+decompressString("<base122>", true)        → window.jsons["assets/bundles/-1/bundle.json"]
+decompressArrayBuffer("<base122>", true)   → window.blobs["assets/bundles/-1/data.blob"]
+decompressArrayBuffer("<base122>", true)   → window.sounds["assets/bundles/-1/xxx.mp3"]
+window.eval("<base122>")                   → luna_engine.js（引擎本体）
+```
+
+**判据**（一次 grep 定生死）：
+
+```bash
+grep -c "data-src122" x.html        # 125
+grep -c "decompressString" x.html   # 6
+grep -c "decompressArrayBuffer" x.html  # 19
+grep -c "unbrotli" x.html           # 5
+grep -c "window.jsons\|window.blobs\|window.sounds" x.html
+grep -o "resourceConfig\":{[^}]*}" x.html   # {"json":"inline","image":"inline","sound":"compress","blob":"compress"}
+```
+
+本例规模：881 objects / 50 mesh / 69 material / 118 texture / 67 sprite / 17 mp3 / 1 scene，GLB 4.86 MB、94,839 三角面。
+
+#### 12.1 base122 解码器（必须照抄，别自己发明）
+
+保留码表 `o = [0, 10, 13, 34, 38, 92]`。逐字符：
+
+```python
+code = ord(ch)
+if code > 127:
+    marker = (code >> 8) & 7
+    if marker != 7:
+        emit(o[marker])        # 先发保留字节
+    emit(127 & code)           # 再发低 7 位
+else:
+    emit(code)                 # ASCII 直发
+```
+
+`emit()` 里做位打包：
+
+```python
+v <<= 1; v |= b
+bitbuf |= (v & 0xFFFF) >> bitcnt
+bitcnt += 7
+if bitcnt >= 8:
+    out.append(bitbuf & 255)
+    bitcnt -= 8
+    bitbuf = (v << (7 - bitcnt)) & 255
+```
+
+**坑 0（最容易栽）：HTML 必须按 UTF-8 读。** 用 latin-1 / utf-16 打开，所有非 ASCII 的 base122 字节全错，解出来是随机噪声，而且 brotli 会报 "corrupt"。
+
+#### 12.2 抓 `decompress*` 的落点：正则要允许 eval 没有 key
+
+只有 jsons/blobs/sounds 带 `["path"]`，`window.eval(code)` 没有下标。一条正则吃三种：
+
+```python
+r'window\.(jsons|blobs|sounds|eval)\s*(?:\[\s*"([^"]+)"\s*\])?\s*='
+```
+
+`eval` 桶没有 key，用位置命名 `engine_<pos>.js`，解完再按体积/魔数改回真名（本例 4.0 MB → `luna_engine.js`）。
+另：解出来的 blob 不一定是贴图，可能是 `data.blob` / `bundle.json` / `shaders.json`，务必**先嗅魔数再定名**（png/jpg/webp/ogg/mp3，否则 json 看首字节 `{`）。
+
+#### 12.3 Transform 池：后序 DFS + 跳过 RectTransform
+
+场景里 756 个 transform id，位姿摊在三个大数组：
+
+```
+scene.local_positions (2268 = 756×3) / local_rotations (3024 = 756×4) / local_scales (2268)
+transform.marker = [1018060, 30240], count = 756, offsets = {positions:0, rotations:2268, scales:5292}
+```
+
+分配规则是**后序 DFS（子先于父）遍历 objects，跳过含 RectTransform(type 16) 的对象**。
+实测后序与池的对齐误差 `|diff| <= 8` 命中 368/756，前序只有 27/756 —— 用前序一定会整体错位、看起来像"模型全散了"。
+
+写法：先跑一遍 `assign_slots()` 后序 DFS 把槽位写进 `o['__slot']`，再做前序 `collect()` 读它；**不要在 collect 里用累加计数器**。
+
+#### 12.4 DTO 索引表：每种渲染器的字段位置不一样，且 PSR 整体偏移 1
+
+从 `luna_engine.js` grep 出来的表（183 项类型名 + 各组件字段）：
+
+```
+Mapping 6  = MeshFilter        {sharedMesh:0}
+Mapping 8  = MeshRenderer      {additionalVertexStreams:0, enabled:2, sharedMaterial:3, sharedMaterials:5}
+Mapping 11 = SkinnedMeshRenderer {sharedMesh:0, bones:2, localBounds:4, rootBone:5, blendShapesWeights:7, enabled:8, sharedMaterial:9, sharedMaterials:11}
+Mapping 14 = SpriteRenderer    {color:0, sprite:4, flipX:6, flipY:7, drawMode:8, size:9, sharedMaterial:16, sharedMaterials:18}
+Mapping 16 = RectTransform     {pivot:0, anchorMin:2, anchorMax:4, sizeDelta:6, anchoredPosition3D:8, rotation:11, scale:15}
+Mapping 2  = Transform         {position:0-2, scale:3-5, rotation:6-9}
+Texture2D  {name:0, width:1, height:2, mipmapCount:3, format:7, wrapMode:8, sRGBTexture:12, wrapU:14, wrapV:15}
+Material   {name:0, shader:1, renderQueue:3, floatParameters:5, colorParameters:6, vectorParameters:7, textureParameters:8, materialFlags:9}
+```
+
+**坑：`ParticleSystemRenderer`(47) 实际数据比表里多一个前导字段，整体 +1。**
+实测 `d[0]=7`、`d[1]=meshId`、`d[21]=材质type`、`d[22]=材质id`、`d[23]=sharedMaterials`。
+若按表里的 21/23 直接取 `sharedMaterial`，会把整数 `9` 当材质 id → 一堆 `missing_9`。
+
+**`textureParameters` 是三元组 `["_BaseMap", 1, 51980]`**，真贴图 id 在 `e[2]`，`e[1]` 恒为 1（引用类型标记）。按 `e[1]` 取会全部拿到 None。
+
+#### 12.5 `enabled` 在 data 里，不在组件 dict 上
+
+组件对象只有 `{type, id, data}`。开关量在 `data`：
+
+| 组件 | enabled 下标 | 本例 |
+|---|---|---|
+| MeshRenderer(8) | `data[2]` | 432 开 / **7 关** |
+| SkinnedMeshRenderer(11) | `data[8]` | 3 全开 |
+| SpriteRenderer(14) | 无（`data[5]` 是 sprite id，别误判） | — |
+| ParticleSystemRenderer(47) | **没有**（`data[6]` 恒 0，不是开关） | 64 全开 |
+
+那 7 个关闭的是碰撞体可视化盒（材质 `Lit`，无贴图），不跳过就会在场景里多出几片灰板。
+
+#### 12.6 地形分层材质（TerrainToMesh）：必须按 splatmap 烘一张，不能只取 layer0
+
+`_T2M_*` 系列材质的 4 张 diffuse 由 **splatmap 的 RGBA 四个通道**当权重混合，四通道相加 ≈ 1.0。
+本例 `splatmap(52824)` = `R 0.949 / G 0.032 / B 0.010 / A 0.009`：
+
+| 通道 | 权重占比 | 对应层贴图 | 画面 |
+|---|---|---|---|
+| R | 94.9% | 51772 | 草地（铺满整块 128×128） |
+| G | 3.2% | 51770 | 浅米色菱形地砖（建筑外围铺装） |
+| B | 1.0% | 51768 | 土黄（门口延伸出去的土路） |
+| **A** | **0.9%** | **51774** | **浅木地板（室内那块）** |
+
+只取 `layer0` 的表现是「整片室内被铺成草地」，而且看起来像"地板丢了"。
+正确做法：`acc += Σ layer_i * w_i`，`tot += Σ w_i`，最后 `acc/tot` 归一化，输出一张 4096² albedo 当 baseColor。
+
+**坑：PIL 对 RGBA 图 `resize` 会先乘 alpha 再除回去（防色渗）**，而 splatmap 恰恰是「alpha≈0 的区域 RGB 才有值」，
+直接 `resize(RGBA)` 会把 RGB 全清成 0 → 烘出来 99% 是纯黑，只有 alpha 那 1% 亮着。
+必须 `si.split()` 拆成 4 个 L 通道分别 `resize` 再 stack。
+
+层重复次数按原游戏反推（木地板板宽 ≈0.4 m、菱形砖 ≈1.2 m）：草地 24 / 地砖 20 / 土黄 24 / 木地板 28 次每 128 米。
+写成常量 `T2M_REPS`，要更清晰就调大 `size` 和重复次数重跑。
+
+**朝向**：烘完**不要**翻转。Unity 的 splatmap 本身就是俯视朝向，配合「顶点 `(x,y,-z)` + UV `v→1-v`」正好对上；
+多翻一次会让木地板整块平移 16 米（表现为"地板跑到房子外面"）。判断方法：把烘出来的图缩到 900px 目检，木地板矩形应该正好压在建筑轮廓上。
+
+#### 12.7 完全重合的重复地面：保留节点、丢那一片面
+
+本例 `Scene` 与 `New Terrain 1` 下各有一块 **128×128、世界坐标完全重合** 的地面，其中一块材质（`New Terrain Splatmap`）**没有任何贴图引用**（运行时由脚本赋值）。两块共面必然 z-fighting，渲染出来是花屏。
+
+处理：`max|POSITION|*2 > 100 且该材质解析不到任何贴图` → `mark(r)` 保留节点层级、不写 `mesh`。
+统计里记一笔 `skip_dup_ground`，README 里说明，别静默删。
+
+#### 12.8 描边是第二个 pass，glTF 表达不了
+
+`SM_*_SmoothOutline` 的 `sharedMaterials = [9, 52458, 9, 52574]` —— 同一 mesh 挂两个 pass，pass2 是 `M_miaobian001`（`_OutlineWidth=0.025`，黑色，靠顶点色反向扩壳 + 背面剔除）。
+**它不是独立的外壳节点**，几何上没多一层。glTF 一个 primitive 只有一种材质，所以只能取第一个，描边丢失是必然取舍，要在交付说明里写清楚。
+
+#### 12.9 校验补充项
+
+- `vbytes == stride * vcount` 全部通过（`stride = Σ(on ? n : 0) * (half ? 2 : 4)`，`halfPrecision` 本例 50/50 全 True）。
+- UV 保真度用「按 UV 裁 atlas 区域」反向验：把 `SM_ZSJ_qiang001` 的 UV0 `(0,0.635)–(0.375,0.995)` 从 `51722` 那张 1024 分区 atlas 上裁出来，应该正好是「木框 + 麻点灰墙板 + 木踢脚线」。裁出来对得上，就说明 UV 与贴图绑定没错，渲染发白只是灯光过曝。
+- 渲染脚手架默认光太亮会把整片墙照成白的（本例 `Ambient 1.8 + dir 2.2`），调到 `ambient 1.25(暖) + dir 1.35 + dir2 0.55` 才和原游戏接近。
 
 ## Cocos Creator 3.x 包补充流程
 
