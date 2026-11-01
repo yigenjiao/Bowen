@@ -903,9 +903,9 @@ Cocos3 包则更适合先用运行时 JS dump 场景图，再离线生成 GLB；
 - cc.AnimationClip 在 bundle 里是 .cconb 文件：16 字节头（魔数 CCON + uint32 version + uint32 文件总长 + uint32 JSON 段长）+ 明文 JSON + 二进制曲线 blob。直接 json.loads(data[16:16+json_len]) 即可。
 - _tracks 为空且存在 _exoticAnimation 字段 = 曲线被烘焙成压缩二进制（exotic animation），存在 JSON 段之后的 blob 里，JSON 中不可读；普通 track（cc.animation.VectorTrack 等）的曲线 bytes 用 TypedArrayRef(offset,length) 指向同一 blob。
 - 定位某物体的动画：dump_scene.json 找节点 → 看父链上 cc.SkeletalAnimation / cc.Animation 组件 → SkeletalAnimation 的骨骼动画 clip 通常与网格同 uuid 不同 sub-asset（@xxxxx.cconb）。
-- 中文名节点（如 巨木/电锯机器）搜英文关键词会漏，直接 grep 中文。
+- 中文名节点（如道具、机器这类中文命名）搜英文关键词会漏，直接 grep 中文。
 
-## Cocos 3.x 骨骼动画解出 + 蒙皮重建（2026-09-17 巨木实战，完整可复现）
+## Cocos 3.x 骨骼动画解出 + 蒙皮重建（2026-09-17 实战，项目 H，完整可复现）
 
 ### 1. ExoticAnimation（烘焙骨骼动画）解析
 - 结构：`cc.AnimationClip._exoticAnimation` → `cc.animation.ExoticAnimation._nodeAnimations[]`（每项 = `cc.animation.ExoticNodeAnimation`，含 `_path`（相对动画根的骨骼路径）+ `_position/_rotation/_scale` 三条 `cc.animation.ExoticTrack`）。
