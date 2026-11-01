@@ -1,25 +1,23 @@
 <p align="center">
-  <a href="https://yigenjiao.github.io/Bowen/"><img src="assets/cover.webp" width="100%" alt="BOWEN —— 把黑盒，拆成白盒。香蕉猫抱着电脑，投射出一只半实体、半线框的茶壶在做体检。3D 技术美术：Playable / Cocos 逆向提取、GLB 资源还原、Shader 复刻。"></a>
+  <a href="https://yigenjiao.github.io/Bowen/"><img src="assets/cover.webp" width="100%" alt="BOWEN，按需求做到能用。香蕉猫抱着电脑，投射出一只半实体、半线框的茶壶在做体检。3D 技术美术，模型、道具与场景地编。"></a>
 </p>
 
 <p align="center">
   <strong><a href="https://yigenjiao.github.io/Bowen/">个人主页</a></strong> &nbsp;·&nbsp;
   <strong><a href="https://yigenjiao.github.io/Bowen/tools/glb-inspector/">GLB 体检台</a></strong> &nbsp;·&nbsp;
-  <a href="skills/luna-playable-extract/">提取工作流文档</a> &nbsp;·&nbsp;
   <a href="#联系">联系我</a>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Cocos_Creator-3.x-e6480f?style=flat-square" alt="Cocos Creator 3.x">
-  <img src="https://img.shields.io/badge/Playable-Luna_%2F_Unity-c98a2b?style=flat-square" alt="Luna / Unity Playable">
+  <img src="https://img.shields.io/badge/Blender-建模_%2F_地编-e6480f?style=flat-square" alt="Blender">
+  <img src="https://img.shields.io/badge/Unity-Shader_%2F_交付-c98a2b?style=flat-square" alt="Unity">
   <img src="https://img.shields.io/badge/glTF-2.0-f0e9dc?style=flat-square&labelColor=14110d" alt="glTF 2.0">
 </p>
 
-我是 **Bowen**，3D 游戏技术美术。专门处理编译后的 **Cocos Creator / Luna / Unity 试玩广告（Playable）**：
-从单个 HTML 包里还原场景节点树、模型、贴图和材质，导出可以二次开发的标准 GLB；
-也拆解溶解、河流、卡通渲染这类效果，在引擎里重建等效 Shader。
+我是 **Bowen**，3D 游戏技术美术。根据甲方需求制作**模型、道具和场景地编**，
+也接已有资源的整理、改版，以及溶解、河流、卡通渲染这类 Shader 效果。
 
-**不是「会一点引擎」，而是能把黑盒拆成白盒。**
+交付标准 GLB 和贴图集，附节点结构表，导进引擎就能用。
 
 ## 🧰 GLB 体检台：把踩过的坑做成工具
 
@@ -52,12 +50,12 @@
 
 | | 能力 | 内容 |
 | --- | --- | --- |
-| 01 | **逆向提取** | 从编译后的 Cocos Creator / HTML Playable 包里还原场景节点树、模型、贴图与配置数据 |
-| 02 | **资源还原** | 贴图绑定、UV 完整性与摆位逐项校验，导出标准 GLB，定位并补齐缺失资产 |
-| 03 | **Shader 复刻** | 拆解溶解、河流、卡通渲染等效果参数，在引擎内重建，并移植到 Unity 管线 |
+| 01 | **模型与道具** | 按需求制作道具、建筑和场景物件，控制面数与贴图规格，适配目标引擎和平台 |
+| 02 | **场景地编** | 按玩法和参考搭建关卡场景，整理摆位、层级与材质，已有场景也可以改版重做 |
+| 03 | **Shader 效果** | 按参考实现溶解、河流、卡通渲染等效果，参数可调，可以接进 Unity 管线 |
 | 04 | **AI 工作流** | 概念出图、批量素材生成与自动化脚本，把重复劳动交给流水线 |
 
-做过的案例（全资产提取、Shader 复刻、主题改版，以及从 8MB 单文件网页里导出 3732 个模型）见[个人主页](https://yigenjiao.github.io/Bowen/#cases)。
+做过的案例（整场景交付、Shader 效果、主题改版，以及一次交付 3732 个模型的大场景）见[个人主页](https://yigenjiao.github.io/Bowen/#cases)。
 
 ## 仓库里有什么
 
@@ -65,15 +63,14 @@
 index.html                       个人主页
 tools/glb-inspector/             GLB 体检台（单文件，无需构建）
   samples/                       健康样本 / 故意埋坑的样本 + 生成脚本
-skills/luna-playable-extract/    Playable 资源提取工作流：包型判断、解码、导出标准与踩坑记录
 assets/                          封面、截图、二维码
 .github/cover/                   README 封面的源文件（HTML + three.js），可以重新生成
 ```
 
 ## 联系
 
-逆向提取、资源还原、Shader 复刻、Playable 资产管线，都可以直接聊。
-说清楚需求和你手上的产物形态，我先判断能不能做。
+模型、道具、场景地编、资源改版和 Shader 效果，都可以直接聊。
+说清楚用途、风格参考和交付格式，我先评估工期。
 
 - **Email**：shiboxun123@gmail.com
 - **GitHub**：[@yigenjiao](https://github.com/yigenjiao)

@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bowen · 3D 技术美术 / Playable 逆向 & 资源管线</title>
-<meta name="description" content="Bowen — 3D 游戏技术美术。Cocos Creator 3.x 逆向提取、GLB 资源还原、Shader 复刻与 AI 素材工作流。">
+<title>Bowen · 3D 技术美术 / 模型、道具与场景地编</title>
+<meta name="description" content="Bowen，3D 游戏技术美术。按项目需求制作模型、道具与场景地编，资源整理与改版，Shader 效果与 AI 素材工作流。">
 <link rel="icon" type="image/png" href="assets/favicon.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Bowen · 把黑盒，拆成白盒">
-<meta property="og:description" content="3D 技术美术。Playable / Cocos 逆向提取、GLB 资源还原、Shader 复刻，以及免费小工具 GLB 体检台。">
+<meta property="og:title" content="Bowen · 3D 技术美术">
+<meta property="og:description" content="按需求制作模型、道具与场景地编，交付能直接进项目的 GLB 资产。另有免费小工具 GLB 体检台。">
 <meta property="og:image" content="https://yigenjiao.github.io/Bowen/assets/cover.jpg">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -339,8 +339,8 @@ footer{border-top:1px solid var(--line);padding:40px 0;margin-top:0}
     <div class="hero-grid">
       <div>
         <div class="tag"><i></i>3D 技术美术 · 可接活</div>
-        <h1>把别人做好的效果，<br>拆开，再<em>重建</em>一遍。</h1>
-        <p>我是 Bowen。专注 Cocos Creator 3.x 与 Playable 广告的逆向提取、资源还原与 Shader 复刻 —— 从编译后的 HTML 包里，把场景、模型、贴图完整取出来，导出成可二次开发的资源。</p>
+        <h1>模型、道具、地编，<br>按需求做到<em>能用</em>。</h1>
+        <p>我是 Bowen，3D 游戏技术美术。根据甲方需求制作模型、道具和场景地编，也接已有资源的整理、改版和 Shader 效果。交付标准 GLB 和贴图，导进引擎就能用。</p>
         <div class="hero-actions">
           <a href="#cases" class="btn btn-primary">看案例</a>
           <a href="#flow" class="btn btn-ghost">看工作流</a>
@@ -352,7 +352,7 @@ footer{border-top:1px solid var(--line);padding:40px 0;margin-top:0}
         </a>
       </div>
       <div class="term">
-        <div class="term-bar"><span></span><span></span><span></span><em>playable-extract</em></div>
+        <div class="term-bar"><span></span><span></span><span></span><em>asset-delivery</em></div>
         <div class="term-body" id="term"></div>
       </div>
     </div>
@@ -363,28 +363,28 @@ footer{border-top:1px solid var(--line);padding:40px 0;margin-top:0}
   <div class="wrap">
     <div class="reveal">
       <div class="eyebrow">定位</div>
-      <h2>不是「会一点引擎」，而是能把黑盒拆成白盒。</h2>
-      <p class="lede">大多数卡点不在于不会做美术，而在于拿不到可用的资产、复现不出别人的效果。我的价值就在中间这段：把不可用的产物，变成可编辑、可复用、可校验的工程资源。</p>
+      <h2>模型做出来只是一半，能直接放进项目才算交付。</h2>
+      <p class="lede">甲方要的是拿到手就能用的资产。我按需求出模型、道具和地编，同时把命名、贴图绑定、UV 和导出格式一起整理好，少走来回返工。</p>
     </div>
     <div class="compare reveal">
       <div class="cmp">
-        <h3>常规做法</h3>
+        <h3>常见问题</h3>
         <ul>
-          <li>拿到编译后的包，只能截图参考</li>
-          <li>贴图是 WebP 内嵌 base64，取不出来</li>
-          <li>模型没有骨骼、UV 丢失</li>
-          <li>特效只能靠肉眼估，做不出等效效果</li>
-          <li>结论：重做一遍，或者放弃</li>
+          <li>导出后贴图丢失、错位或发黑</li>
+          <li>命名混乱，找不到对应的资源</li>
+          <li>导进引擎比例不对、骨骼散架</li>
+          <li>风格和原项目对不上</li>
+          <li>结论：来回返工，拖慢进度</li>
         </ul>
       </div>
       <div class="cmp on">
         <h3>我的做法</h3>
         <ul>
-          <li>解码 base122 / brotli，解出 assetMap</li>
-          <li>贴图还原为标准图片，命名可读</li>
-          <li>蒙皮与骨骼修复后导出标准 GLB</li>
-          <li>Shader 拆解参数，在引擎内重建等效实现</li>
-          <li>结论：资产可直接进二次开发管线</li>
+          <li>按需求和参考定好风格、面数与贴图规格</li>
+          <li>贴图、材质和命名统一整理</li>
+          <li>导出前逐项检查 UV、法线和蒙皮</li>
+          <li>交付标准 GLB 与贴图集，附节点结构表</li>
+          <li>结论：导入引擎就能用</li>
         </ul>
       </div>
     </div>
@@ -401,21 +401,21 @@ footer{border-top:1px solid var(--line);padding:40px 0;margin-top:0}
     <div class="grid-4 reveal">
       <div class="card">
         <div class="idx">01</div>
-        <h3>逆向提取</h3>
-        <p>从编译后的 Cocos Creator / HTML Playable 包里还原场景节点树、模型、贴图与配置数据。</p>
-        <div class="tags"><b>Cocos 3.x</b><b>Playable</b><b>assetMap</b></div>
+        <h3>模型与道具</h3>
+        <p>按需求制作道具、建筑和场景物件，控制面数与贴图规格，适配目标引擎和平台。</p>
+        <div class="tags"><b>建模</b><b>道具</b><b>低模</b></div>
       </div>
       <div class="card">
         <div class="idx">02</div>
-        <h3>资源还原</h3>
-        <p>贴图绑定、UV 完整性与摆位逐项校验，导出标准 GLB，缺失资产定位并补齐。</p>
-        <div class="tags"><b>GLB</b><b>蒙皮修复</b><b>完整性校验</b></div>
+        <h3>场景地编</h3>
+        <p>按玩法和参考搭建关卡场景，整理摆位、层级与材质，已有场景也可以改版重做。</p>
+        <div class="tags"><b>地编</b><b>关卡场景</b><b>改版</b></div>
       </div>
       <div class="card">
         <div class="idx">03</div>
-        <h3>Shader 复刻</h3>
-        <p>拆解溶解、河流、卡通渲染等效果参数，在引擎内重建等效实现，移植到 Unity 管线。</p>
-        <div class="tags"><b>Shader</b><b>特效</b><b>Unity 移植</b></div>
+        <h3>Shader 效果</h3>
+        <p>按参考实现溶解、河流、卡通渲染等效果，参数可调，可以接进 Unity 管线。</p>
+        <div class="tags"><b>Shader</b><b>特效</b><b>Unity</b></div>
       </div>
       <div class="card">
         <div class="idx">04</div>
@@ -431,7 +431,7 @@ footer{border-top:1px solid var(--line);padding:40px 0;margin-top:0}
   <div class="wrap">
     <div class="reveal">
       <div class="eyebrow">工作流</div>
-      <h2>六步，从黑盒到可用资产</h2>
+      <h2>六步，从需求到可用资产</h2>
       <p class="lede">点左边任意一步，看这一步具体在做什么。</p>
     </div>
     <div class="steps reveal">
@@ -446,19 +446,19 @@ footer{border-top:1px solid var(--line);padding:40px 0;margin-top:0}
     <div class="reveal">
       <div class="eyebrow">案例</div>
       <h2>做过的事</h2>
-      <p class="lede">三类典型任务，从取资产到复刻效果。</p>
+      <p class="lede">几类典型任务，从场景交付到效果实现。</p>
     </div>
     <div class="grid-3 reveal">
       <div class="case">
-        <div class="k">CASE 01 · 全资产提取</div>
-        <h3>从 Playable 广告里还原整场景</h3>
-        <p>针对编译后的 playable 包，解码资源映射、还原内嵌贴图，完整取出场景节点树、模型与材质，交付可供美术验证与二次开发的标准资源。</p>
+        <div class="k">CASE 01 · 整场景交付</div>
+        <h3>一整套场景资产的整理与交付</h3>
+        <p>按项目需求整理整套场景的模型、贴图、材质与节点层级，统一命名和规格，交付可供美术验证、可直接二次开发的标准资源。</p>
         <div class="res">输出：GLB + 贴图集 + 节点结构表</div>
       </div>
       <div class="case">
-        <div class="k">CASE 02 · Shader 复刻</div>
-        <h3>河流溶解与消融特效重建</h3>
-        <p>分析广告级特效中的溶解遮罩、河流流动与边缘消融逻辑，提取参数规律，在引擎内重建等效实现，可用于自有项目复用。</p>
+        <div class="k">CASE 02 · Shader 效果</div>
+        <h3>河流、溶解与消融特效</h3>
+        <p>按参考效果实现溶解遮罩、河流流动与边缘消融，整理成参数可调的 Shader，可以在项目里反复复用。</p>
         <div class="res">输出：可复用 Shader + 参数说明</div>
       </div>
       <div class="case">
@@ -468,9 +468,9 @@ footer{border-top:1px solid var(--line);padding:40px 0;margin-top:0}
         <div class="res">输出：替换资产包 + 出图工作流</div>
       </div>
       <div class="case">
-        <div class="k">CASE 04 · 单文件包实测</div>
-        <h3>从 8MB 单文件网页里导出 3732 个模型</h3>
-      <p>8MB 单文件 playable 网页，3776 个节点，导出 3732 个模型 / 1187 个实例 / 21926 个去重面 / 29 个材质，交付 2.3MB GLB。验收：引擎世界包围盒（AABB）与 Blender 对账一致，多视角渲染目检通过。关键点：base122 内联 + Brotli 压缩；data URL 前缀不剥贴图全废；材质按 pass 取错就没贴图；骨骼用当前姿态烘焙。</p>
+        <div class="k">CASE 04 · 大场景交付</div>
+        <h3>一次交付 3732 个模型的大场景</h3>
+      <p>3776 个节点，3732 个模型、1187 个实例、29 个材质，整体压到 2.3MB 的 GLB。验收时引擎里的世界包围盒和 Blender 逐项对账一致，多视角渲染检查通过。</p>
         <div class="res">输出：GLB + 贴图集 + 节点结构表</div>
       </div>
     </div>
@@ -512,8 +512,8 @@ footer{border-top:1px solid var(--line);padding:40px 0;margin-top:0}
     <div class="contact reveal">
       <div>
         <div class="eyebrow">联系</div>
-        <h2>有包要拆，或者有活要接？</h2>
-        <p>逆向提取、资源还原、Shader 复刻、Playable 资产管线，都可以直接聊。说清楚需求和你手上的产物形态，我先判断能不能做。</p>
+        <h2>有模型、道具或场景要做？</h2>
+        <p>模型、道具、场景地编、资源改版和 Shader 效果，都可以直接聊。说清楚用途、风格参考和交付格式，我先评估工期。</p>
       </div>
       <div class="ways">
         <a class="way" href="https://github.com/yigenjiao" target="_blank" rel="noopener"><span>GITHUB</span><b>github.com/yigenjiao</b></a>
@@ -565,11 +565,11 @@ footer{border-top:1px solid var(--line);padding:40px 0;margin-top:0}
   });
 
   var lines = [
-    {t:'$ extract --src ./ads/bundle.html', c:'c-dim'},
-    {t:'\u2713 解码 base122 / brotli · 完成', c:'c-ok'},
-    {t:'\u2713 assetMap \u5df2\u89e3\u5305 \u00b7 \u5171 1284 \u4e2a\u8d44\u6e90', c:'c-ok'},
-    {t:'\u2713 \u8d34\u56fe WebP \u2192 PNG \u00b7 \u8499\u76ae\u5df2\u4fee\u590d', c:'c-ok'},
-    {t:'\u2713 \u5bfc\u51fa scene.glb \u00b7 42.6 MB', c:'c-ok'},
+    {t:'$ check ./delivery/scene.glb', c:'c-dim'},
+    {t:'✓ 模型、道具、地编 · 已整理', c:'c-ok'},
+    {t:'✓ 贴图绑定 · 命名统一', c:'c-ok'},
+    {t:'✓ UV / 法线 / 蒙皮 · 检查通过', c:'c-ok'},
+    {t:'✓ 导出 scene.glb · 可交付', c:'c-ok'},
     {t:'$ _', c:'c-key'}
   ];
   var box = document.getElementById('term');
@@ -593,12 +593,12 @@ footer{border-top:1px solid var(--line);padding:40px 0;margin-top:0}
   tick();
 
   var STEPS = [
-    {n:'01', name:'抓取包体', desc:'拿到线上投放的 playable 或构建产物，确认引擎版本与资源组织方式，判断解码路径。', code:'$ curl -O bundle.html\n# 识别 Cocos 3.x / 资源内嵌结构'},
-    {n:'02', name:'解码还原', desc:'按资源格式逐层解码：base122、brotli、assetMap，把内嵌数据还原成可读的资源清单。', code:'base122 \u2192 brotli \u2192 assetMap\n# 输出：资源索引表 + 原始二进制'},
-    {n:'03', name:'贴图提取', desc:'把内嵌在代码里的 WebP / base64 贴图整体还原为标准图片文件，并按语义重命名。', code:'webp \u2192 png\n# 保留原有尺寸与压缩信息'},
-    {n:'04', name:'蒙皮修复', desc:'还原骨骼与蒙皮权重，修复常见断裂问题，保证模型可动画、可编辑。', code:'# 骨骼层级对齐\n# 权重归一化修复'},
-    {n:'05', name:'导出交付', desc:'导出标准 GLB 与贴图集，附节点结构表，直接进二次开发管线或 Unity 工程。', code:'$ export --scene scene.glb\n\u2713 42.6 MB \u00b7 1284 \u8d44\u6e90'},
-    {n:'06', name:'对照校验', desc:'拿导出的资产和运行时游戏逐项比对：模型摆位、贴图绑定、UV 完整性，发现缺失立即补全。', code:'\u2713 \u6446\u4f4d\u4e00\u81f4\n\u2713 \u8d34\u56fe\u7ed1\u5b9a\u6b63\u786e\n\u2713 UV \u65e0\u4e22\u5931'}
+    {n:'01', name:'需求确认', desc:'确认用途、风格参考、目标引擎和平台，定好面数与贴图规格，避免做完再返工。', code:'# 风格参考 / 面数 / 贴图规格\n# 目标引擎与平台'},
+    {n:'02', name:'白模搭建', desc:'先出体块和场景布局，确认比例、视角和摆位，甲方确认后再进细化。', code:'# 体块 → 布局 → 确认'},
+    {n:'03', name:'建模与贴图', desc:'细化模型，展 UV，制作贴图与材质，按规格控制面数和贴图尺寸。', code:'# 建模 → UV → 贴图 → 材质'},
+    {n:'04', name:'场景地编', desc:'按玩法和参考摆放模型与道具，整理节点层级、命名和材质复用。', code:'# 摆位 / 层级 / 命名 / 材质复用'},
+    {n:'05', name:'导出交付', desc:'导出标准 GLB 与贴图集，附节点结构表，直接进项目或 Unity 工程。', code:'$ export --scene scene.glb\n✓ GLB + 贴图集 + 节点结构表'},
+    {n:'06', name:'对照校验', desc:'导进目标引擎逐项检查摆位、贴图绑定和 UV，再用 GLB 体检台跑一遍，发现问题当场修。', code:'✓ 摆位一致\n✓ 贴图绑定正确\n✓ UV 无丢失'}
   ];
   var list = document.getElementById('stepList');
   var panel = document.getElementById('stepPanel');
