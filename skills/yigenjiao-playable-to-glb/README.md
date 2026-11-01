@@ -1,4 +1,6 @@
-# luna-playable-extract
+# 一根蕉 · 试玩广告转 GLB
+
+`yigenjiao-playable-to-glb`
 
 从 **Luna / DataEye / Cocos Creator 试玩广告（playable ad）单文件 HTML** 中离线提取全部 3D 模型与贴图，绑定材质、还原场景摆放，导出 Blender 可直接导入的 `scene_textured.glb`（同时给 OBJ 兜底）。
 
@@ -17,10 +19,10 @@
 
 ```bash
 git clone https://github.com/yigenjiao/Bowen.git
-cp -r Bowen/skills/luna-playable-extract ~/.workbuddy/skills/
+cp -r Bowen/skills/yigenjiao-playable-to-glb ~/.workbuddy/skills/
 ```
 
-放进 `~/.workbuddy/skills/` 后，给 WorkBuddy 一个 playable HTML 并说「把里面所有模型和贴图导出，摆好位置绑好贴图」，就会自动走这套流程。
+放进 `~/.workbuddy/skills/` 后（如果以前装过旧名字 `luna-playable-extract`，先把旧文件夹删掉，免得两份同时生效），给 WorkBuddy 一个 playable HTML 并说「把里面所有模型和贴图导出，摆好位置绑好贴图」，就会自动走这套流程。
 
 ## 里面有什么
 
