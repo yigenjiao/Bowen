@@ -27,7 +27,7 @@ body{font-family:"Noto Sans SC","Inter",sans-serif;color:var(--text);-webkit-fon
 .card::after{content:"";position:absolute;inset:0;opacity:.18;mix-blend-mode:overlay;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
 
-#gl{position:absolute;right:-40px;top:0;width:1300px;height:904px}
+#gl{position:absolute;left:1060px;top:0;width:1000px;height:904px;z-index:1}
 
 .copy{position:absolute;left:132px;top:96px;z-index:2}
 .kicker{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:32px;letter-spacing:.34em;color:var(--ember);display:flex;align-items:center;gap:22px}
@@ -51,7 +51,17 @@ body{font-family:"Noto Sans SC","Inter",sans-serif;color:var(--text);-webkit-fon
 .call .err{background:#ff5a3c;color:#fff}
 .call::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--ember);box-shadow:0 0 14px var(--ember)}
 .call.r::before{order:3}
-.badge{position:absolute;right:250px;bottom:118px;z-index:3;font-family:"JetBrains Mono",monospace;font-size:26px;letter-spacing:.24em;padding:16px 26px;border:1px solid rgba(240,233,220,.22);border-radius:10px;background:rgba(13,11,9,.72);backdrop-filter:blur(6px)}
+.cat{position:absolute;right:150px;bottom:20px;height:800px;z-index:2}
+.cat img{height:100%;display:block;filter:url(#rim) saturate(1.04) contrast(1.03)}
+/* 屏幕的光打在小猫脸和手上 */
+.cat .lit{position:absolute;inset:0;-webkit-mask:url(banana-cat.png) center/contain no-repeat;mask:url(banana-cat.png) center/contain no-repeat;
+  background:radial-gradient(420px 380px at 22% 78%, rgba(255,120,40,.42), transparent 70%),radial-gradient(500px 500px at 8% 40%, rgba(230,72,15,.18), transparent 70%);mix-blend-mode:screen}
+.cat::after{content:"";position:absolute;left:4%;right:-6%;bottom:-6px;height:60px;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.65),transparent);z-index:-1}
+/* 从电脑投出的全息光束 */
+.beam{position:absolute;z-index:1;left:1290px;top:520px;width:640px;height:210px;
+  clip-path:polygon(4% 19%,58% 19%,89% 90%,65% 96%);
+  background:linear-gradient(to top left,rgba(255,140,60,.38) 0%,rgba(230,72,15,.16) 55%,rgba(230,72,15,.04) 100%);filter:blur(3px);mix-blend-mode:screen}
+.badge{position:absolute;left:1250px;top:66px;z-index:3;font-family:"JetBrains Mono",monospace;font-size:26px;letter-spacing:.24em;padding:16px 26px;border:1px solid rgba(240,233,220,.22);border-radius:10px;background:rgba(13,11,9,.72);backdrop-filter:blur(6px)}
 .badge b{color:var(--ember);font-weight:700}
 </style>
 </head>
@@ -67,16 +77,22 @@ body{font-family:"Noto Sans SC","Inter",sans-serif;color:var(--text);-webkit-fon
   </div>
   <div class="chips"><span>COCOS 3.x</span><span>LUNA / UNITY</span><span>GLB PIPELINE</span><span>SHADER REBUILD</span></div>
 
-  <span class="plus" style="left:1340px;top:70px">+</span>
-  <span class="plus" style="left:1500px;top:150px">+</span>
-  <span class="plus" style="left:2210px;top:770px">+</span>
-  <div class="vert">BOWEN_TECH_ART — PIPELINE_READY ◆</div>
+  <svg width="0" height="0" style="position:absolute"><filter id="rim" x="-10%" y="-10%" width="120%" height="120%">
+    <feMorphology in="SourceAlpha" operator="dilate" radius="2" result="d"/>
+    <feFlood flood-color="#e6480f" flood-opacity=".6"/><feComposite in2="d" operator="in" result="edge"/>
+    <feGaussianBlur in="edge" stdDeviation="14" result="glow"/>
+    <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter></svg>
+  <div class="beam"></div>
+  <div class="cat"><img src="banana-cat.png" alt=""><div class="lit"></div></div>
 
-  <div class="call r" style="left:1400px;top:236px"><i class="ok">OK</i>NORMAL · unit length</div>
-  <div class="call r" style="left:1350px;top:650px"><i class="ok">OK</i>IBM · column-major</div>
-  <div class="call" style="left:2050px;top:200px">UV0 · flipY<i class="ok">OK</i></div>
-  <div class="call" style="left:2010px;top:470px">COLOR_0<i class="err">DROP</i></div>
-  <div class="badge">BOWEN <b>//</b> GLB INSPECTOR</div>
+  <span class="plus" style="left:1640px;top:40px">+</span>
+  <span class="plus" style="left:2280px;top:640px">+</span>
+  <div class="vert">BANANA_CAT // GLB_INSPECTOR ◆ BOWEN_TECH_ART</div>
+
+  <div class="call" style="left:1300px;top:112px">UV0 · flipY<i class="ok">OK</i></div>
+  <div class="call" style="left:1560px;top:166px">COLOR_0<i class="err">DROP</i></div>
+  <div class="call r" style="left:1080px;top:650px"><i class="ok">OK</i>NORMAL · unit</div>
 </div>
 
 <script type="importmap">
@@ -105,8 +121,9 @@ scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 scene.environmentIntensity = 0.25;
 
 const camera = new THREE.PerspectiveCamera(30, W / H, 0.1, 100);
-camera.position.set(4.6, 2.6, 7.4);
+camera.position.set(4.6, 2.6, 7.4).multiplyScalar(1.12);
 camera.lookAt(0.05, 0.05, 0);
+camera.setViewOffset(W, H, 75, 60, W, H); // 让茶壶落在画布偏上的位置，像从电脑里投出来
 
 // 一刀斜切：左边实体（黑盒），右边线框（白盒）
 // clippingPlanes 是世界空间：法线取镜头的“右方向”，让切口竖着把画面一分为二
