@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://yigenjiao.github.io/Bowen/"><img src="assets/cover.webp" width="100%" alt="BOWEN —— 把黑盒，拆成白盒。3D 技术美术：Playable / Cocos 逆向提取、GLB 资源还原、Shader 复刻。"></a>
+  <a href="https://yigenjiao.github.io/Bowen/"><img src="assets/cover.webp" width="100%" alt="BOWEN —— 把黑盒，拆成白盒。香蕉猫抱着电脑，投射出一只半实体、半线框的茶壶在做体检。3D 技术美术：Playable / Cocos 逆向提取、GLB 资源还原、Shader 复刻。"></a>
 </p>
 
 <p align="center">

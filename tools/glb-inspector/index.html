@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GLB 体检台 · Bowen</title>
 <meta name="description" content="拖进一个 GLB / glTF，在浏览器里预览并自动体检：bindposes 主序、COLOR_0 染色、法线、索引越界、蒙皮权重、buffer uri 等常见导出坑。文件不上传。">
+<link rel="icon" type="image/png" href="../../assets/favicon.png">
+<link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -123,6 +125,7 @@ aside{border-right:1px solid var(--line);display:flex;flex-direction:column;min-
 
 .drop{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:30px}
 .drop .box{border:1.5px dashed var(--line-2);border-radius:18px;padding:44px 40px;max-width:520px;background:rgba(20,17,13,.6);transition:.2s}
+.drop .cat{display:block;width:118px;margin:-6px auto 10px;filter:drop-shadow(0 0 18px rgba(230,72,15,.35))}
 .drop h2{font-weight:500;font-size:22px;margin-bottom:8px}
 .drop p{color:var(--muted);font-size:13px;line-height:1.9}
 .drop .row{display:flex;gap:8px;justify-content:center;margin-top:18px;flex-wrap:wrap}
@@ -200,7 +203,8 @@ body.dragging .drop .box{border-color:var(--ember);transform:scale(1.02)}
     <div class="legend" id="legend"></div>
     <div class="drop" id="drop">
       <div class="box">
-        <h2>把 GLB 拖进来</h2>
+        <img class="cat" src="../../assets/banana-cat.webp" alt="香蕉猫">
+        <h2>把 GLB 拖进来，香蕉猫帮你查</h2>
         <p>支持 <b>.glb</b>、内嵌资源的 <b>.gltf</b>，或把 <b>.gltf + .bin + 贴图</b> 一起拖进来。<br>
           加载后自动检查导出常见的坑：bindposes 主序、COLOR_0 染色、法线、索引越界、蒙皮权重、buffer uri……</p>
         <div class="row">
