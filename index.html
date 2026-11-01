@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bowen · 3D 技术美术 / Playable 逆向 & 资源管线</title>
 <meta name="description" content="Bowen — 3D 游戏技术美术。Cocos Creator 3.x 逆向提取、GLB 资源还原、Shader 复刻与 AI 素材工作流。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Bowen · 把黑盒，拆成白盒">
+<meta property="og:description" content="3D 技术美术。Playable / Cocos 逆向提取、GLB 资源还原、Shader 复刻，以及免费小工具 GLB 体检台。">
+<meta property="og:image" content="https://yigenjiao.github.io/Bowen/assets/cover.jpg">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,400..700&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Serif+SC:wght@500;700;900&display=swap" rel="stylesheet">
@@ -77,6 +82,18 @@ nav.scrolled{
   transition:border-color .25s,background .25s,color .25s;
 }
 .nav-cta:hover{border-color:var(--ember);background:rgba(230,72,15,.12);color:#fff}
+.nav-links a.nav-new{color:var(--text);display:inline-flex;align-items:center;gap:6px}
+.nav-new i{font-style:normal;font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.08em;background:var(--ember);color:#fff;border-radius:3px;padding:1px 5px}
+.nav-tool{display:none;align-items:center;gap:7px;font-family:var(--mono);font-size:12.5px;letter-spacing:.06em;color:#fff;background:var(--ember);border-radius:3px;padding:9px 14px;margin-left:auto}
+.nav-tool i{width:6px;height:6px;border-radius:50%;background:#fff;animation:pulse 2.4s ease-in-out infinite}
+.hero-new{margin-top:30px;display:flex;align-items:center;gap:16px;max-width:520px;padding:14px 18px;border:1px solid rgba(230,72,15,.38);border-radius:6px;background:linear-gradient(90deg,rgba(230,72,15,.13),rgba(230,72,15,.03));transition:border-color .25s,transform .25s,background .25s}
+.hero-new:hover{border-color:var(--ember);transform:translateY(-2px);background:linear-gradient(90deg,rgba(230,72,15,.2),rgba(230,72,15,.05))}
+.hero-new .nb{flex:none;font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.1em;background:var(--ember);color:#fff;border-radius:3px;padding:3px 7px}
+.hero-new .tx{flex:1;font-size:14.5px;color:var(--text);line-height:1.6}
+.hero-new .tx b{font-weight:500;color:var(--ember);margin-right:4px}
+.hero-new .tx small{display:block;font-family:var(--mono);font-size:11.5px;color:var(--faint);letter-spacing:.04em}
+.hero-new .ar{flex:none;font-family:var(--mono);font-size:18px;color:var(--ember);transition:transform .25s}
+.hero-new:hover .ar{transform:translateX(4px)}
 
 /* reveal */
 .reveal{opacity:0;transform:translateY(26px);transition:opacity .8s ease,transform .8s cubic-bezier(.2,.7,.3,1)}
@@ -280,6 +297,8 @@ footer{border-top:1px solid var(--line);padding:40px 0;margin-top:0}
 @media (max-width:780px){
   .wrap,.nav-inner{padding-left:22px;padding-right:22px}
   .nav-links{display:none}
+  .nav-tool{display:inline-flex}
+  .nav-inner{gap:10px}
   .band{padding:78px 0}
   .hero{padding:130px 0 80px}
   .grid-3{grid-template-columns:1fr}
@@ -306,8 +325,9 @@ footer{border-top:1px solid var(--line);padding:40px 0;margin-top:0}
       <a href="#skills">能力</a>
       <a href="#flow">工作流</a>
       <a href="#cases">案例</a>
-      <a href="#tools">工具</a>
+      <a href="#tools" class="nav-new">工具<i>NEW</i></a>
     </div>
+    <a href="tools/glb-inspector/" class="nav-tool">体检台<i></i></a>
     <a href="#contact" class="nav-cta">聊聊合作</a>
   </div>
 </nav>
@@ -323,6 +343,11 @@ footer{border-top:1px solid var(--line);padding:40px 0;margin-top:0}
           <a href="#cases" class="btn btn-primary">看案例</a>
           <a href="#flow" class="btn btn-ghost">看工作流</a>
         </div>
+        <a class="hero-new" href="tools/glb-inspector/">
+          <span class="nb">NEW</span>
+          <span class="tx"><b>GLB 体检台</b>上线 · 拖进模型，自动查出导出的坑<small>免费 · 浏览器本地运行 · 不上传文件</small></span>
+          <span class="ar">→</span>
+        </a>
       </div>
       <div class="term">
         <div class="term-bar"><span></span><span></span><span></span><em>playable-extract</em></div>
