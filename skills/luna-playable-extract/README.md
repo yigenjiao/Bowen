@@ -2,16 +2,16 @@
 
 从 **Luna / DataEye / Cocos Creator 试玩广告（playable ad）单文件 HTML** 中离线提取全部 3D 模型与贴图，绑定材质、还原场景摆放，导出 Blender 可直接导入的 `scene_textured.glb`（同时给 OBJ 兜底）。
 
-整理自 2026-07 ~ 2026-10 的十余次实战（Township、PlayCools 泳池、STPL307 轨道扩张、推小火车、雪球机等），记录的是**跑通过的路径和踩过的坑**，不是理论方案。
+整理自 2026-07 ~ 2026-10 的十余次实战，记录的是**跑通过的路径和踩过的坑**，不是理论方案。
 
 ## 能处理哪几类包
 
 | 判据（grep 原文即可） | 包型 | 章节 |
 |---|---|---|
 | `*_str.dat` / `meshes` 清单 / Unity 风格 bundle | Luna / Unity playable | 主体 + 「Unity / Luna 包补充流程」 |
-| `__PLAYABLETOOLS_FORMAT__="cocos3-assetmap"` + `unbrotli` | Cocos3 assetmap（PlayCools 变体） | 「PlayCools 变体」 |
-| `super-html` + `decodeBase122` + `inflateRaw` + `window.__res` + `window.__zip` | Cocos3「polar / Super HTML」单文件包 | 「polar」节（九阶段完整流程 + 代码骨架） |
-| `window.__HTML_COMPRESSED` + XTEA | Funplus Playable Tech Team | 「XTEA 内联包」 |
+| `__PLAYABLETOOLS_FORMAT__="cocos3-assetmap"` + `unbrotli` | Cocos3 assetmap 变体 | 「Cocos3 assetmap 变体」 |
+| `super-html` + `decodeBase122` + `inflateRaw` + `window.__res` + `window.__zip` | Cocos3「Super HTML」单文件包 | 「Super HTML 单文件包」节（九阶段完整流程 + 代码骨架） |
+| `window.__HTML_COMPRESSED` + XTEA | XTEA 内联包 | 「XTEA 内联包」 |
 
 ## 安装
 
@@ -36,8 +36,8 @@ cp -r Bowen/skills/luna-playable-extract ~/.workbuddy/skills/
 
 | 项目 | 节点 | 实例 | 面数（去重） | GLB |
 |---|---|---|---|---|
-| STPL307 轨道扩张 | 3732 | 1187 | 21,926 | 2.3 MB |
-| 六边形清理泳池 | 4582 | 1204 | — | 6.5 MB |
+| 项目 E | 3732 | 1187 | 21,926 | 2.3 MB |
+| 项目 D | 4582 | 1204 | — | 6.5 MB |
 
 ## 说明
 

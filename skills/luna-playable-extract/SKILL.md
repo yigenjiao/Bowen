@@ -34,8 +34,8 @@ agent_created: true
 
    | 判据（grep 原文即可） | 包型 | 去读哪 |
    |---|---|---|
-   | `super-html` + `decodeBase122` + `inflateRaw` + `window.__res` + `window.__zip` | Cocos3「polar / Super HTML」单文件包 | 本文「White Bear Studio / polar」节（含九阶段完整流程 + 代码骨架） |
-   | `__PLAYABLETOOLS_FORMAT__="cocos3-assetmap"` + `unbrotli` + `base64` | Cocos3 assetmap（PlayCools 变体） | 本文「PlayCools 变体」节 |
+   | `super-html` + `decodeBase122` + `inflateRaw` + `window.__res` + `window.__zip` | Cocos3「Super HTML」单文件包 | 本文「Super HTML 单文件包」节（含九阶段完整流程 + 代码骨架） |
+   | `__PLAYABLETOOLS_FORMAT__="cocos3-assetmap"` + `unbrotli` + `base64` | Cocos3 assetmap 变体 | 本文「Cocos3 assetmap 变体」节 |
    | `*_str.dat` / `meshes` 清单 / Unity 风格 bundle | Luna / Unity playable | 本文主体 + 「Unity / Luna 包补充流程」节 |
 
    共同骨架永远是：**解包 → 定位场景清单 → 运行时 dump → 顶点按 stride 解析 → 材质选对 pass → 导 GLB → 结构校验 + AABB 对账 + 渲染目检**。任何一类包都别跳过最后三步。
@@ -388,7 +388,7 @@ Unity Prefab（Worker/Prisoner/Target 等）对象带完整显式 Transform 层�
 - 计算世界空间 AABB，确认范围合理；
 - 用 three.js + Playwright 渲染并截图，与原始网页运行效果对比。
 
-### 10. 包间差异速查（2026-09-11 Township 实战验证）
+### 10. 包间差异速查（2026-09-11 实战验证，项目 B）
 
 组件类型编号**每个包都不同**，绝不能照抄上一个包的编号。上手先做两件事：
 
@@ -397,7 +397,7 @@ Unity Prefab（Worker/Prisoner/Target 等）对象带完整显式 Transform 层�
 
 已见过的两套编号：
 
-| 组件 | toilet_click(08-31) | Township(09-11) |
+| 组件 | 项目 A(08-31) | 项目 B(09-11) |
 |---|---|---|
 | MeshFilter | 36 | 3 |
 | MeshRenderer | 37 | 5 |
@@ -407,17 +407,17 @@ Unity Prefab（Worker/Prisoner/Target 等）对象带完整显式 Transform 层�
 | Transform 显式 | 22 | （无，全走池）|
 | RectTransform | 0 | 89（不占池）|
 
-Township 包的其他差异：
+项目 B 的其他差异：
 
 - **Transform 池有显式映射表**：`scene.transform_ids`（4142 项）存的是 Transform 组件 id，与对象 id 无固定算术偏移（部分 +2、部分 +4）。可靠做法：后序 DFS 遍历树（跳过 RectTransform 对象），与 `transform_ids` 按**位置**对齐（顺序已验证完全一致），直接 zip 出 slot。
 - Mesh 索引支持 uint32（`data[3]=1`，本包 70/202 个 mesh 是 u32）；submesh 长度按 4 字节除。
 - 材质贴图槽 type code 是 8/None（非 27）；贴图 img 标签扩展名有 `.jpeg`（61 张），get_image 要试 `('png','jpeg','jpg','webp')` 全部组合。
-- **顶点色材质**（M_VertexPaint，柏树/花丛）：streams 含 COLOR(5)，导出 COLOR_0(FLOAT VEC4)；材质无 baseColorTexture 时置 `vertexColors:true`，否则渲染一片白。
+- **顶点色材质**（树木、花丛这类）：streams 含 COLOR(5)，导出 COLOR_0(FLOAT VEC4)；材质无 baseColorTexture 时置 `vertexColors:true`，否则渲染一片白。
 - **UV V 翻转是必须的**（Unity v=0 在底、glTF 在顶）：平铺贴图（草地/沙地）看不出没翻转，**图集贴图（树叶/树干混合图集）会整树采错颜色区域**——树冠变枯色是典型症状。非恒等 `_MainTex_ST`（6 个材质）用 KHR_texture_transform 编码：scale=[sx,sy]，offset=[ox, 1-sy-oy]。
 - UV 修复的验证方法：按顶点高度分组（树冠/树干）分别采样贴图颜色，比整 mesh 平均色更能定位问题。
-- SMR（如蛋机里的鸡）可能藏在场景任意深度的巢位节点下，漏导的表现是"场景里有鸡窝没鸡"。
+- SMR（如动物角色）可能藏在场景任意深度的子节点下，漏导的表现是"场景里有窝没有动物"。
 
-### 11. 内联 brotli 变体 + 三个必踩的坑（2026-10-19 经营跳楼机_appLovin 实战）
+### 11. 内联 brotli 变体 + 三个必踩的坑（2026-10-19 实战，项目 C）
 
 **包型**：不用 base122，而是 `decompressString / decompressArrayBuffer("<b64>", isBase122=false, size)` + `unbrotli`（= brotli）。资源全内联在三个槽里：
 
@@ -445,17 +445,17 @@ grep -o "Components\.\(MeshRenderer\|MeshFilter\|SkinnedMeshRenderer\|SpriteRend
 统一在写 accessor 的入口做：`nd = np.ascontiguousarray(np.asarray(nd, dtype=np.float32))`（u32/u16 同理）。
 
 **坑 3：不要盲目导出 COLOR_0**。
-本例顶点色是建模残留：`YuanHuan` 顶点色纯红 (0.82,0,0)、`polySurface2` 有 (0,0,0,0) 全黑，而 Unity 侧 shader 根本不采样。
+本例顶点色是建模残留：一个模型顶点色纯红 (0.82,0,0)、另一个是 (0,0,0,0) 全黑，而 Unity 侧 shader 根本不采样。
 glTF 规范里 COLOR_0 一定与 baseColor 相乘 → 蓝贴图的柱子渲染成红色、部分模型整块发黑。
-判据：材质里没有顶点色相关 keyword / 属性时，直接不写 COLOR_0。（Township 的树是反例，那种要保留。）
+判据：材质里没有顶点色相关 keyword / 属性时，直接不写 COLOR_0。（项目 B 的树木是反例，那种要保留。）
 
 **坑 4：GLB 的 `buffer` 不能带 `uri`**，否则 three.js / Blender 会去外部找 bin 而报 "Failed to load buffer"。写 GLB 前 `gltf['buffers'][0].pop('uri', None)`；gltf+bin 那份再补回去。
 
-**结构简化点**：本包 3385 个对象**全部带显式 Transform**（3296 个 `type 2` + 89 个 `type 9` RectTransform），不需要 Township 那种 transform 池，按父链累乘即可。
+**结构简化点**：本包 3385 个对象**全部带显式 Transform**（3296 个 `type 2` + 89 个 `type 9` RectTransform），不需要项目 B 那种 transform 池，按父链累乘即可。
 
-**2D 精灵要隔离**：`SpriteRenderer`（游客、排队人群、升级特效）是平面贴图，导出成 quad 并把节点名加 `[Sprite]` 前缀，Blender 里一搜就能整组隐藏；同时要用 **sprite 自己的 texture** 建材质（`sprite.data[2]`），别复用它的 UI 默认材质，否则全白。
+**2D 精灵要隔离**：`SpriteRenderer`（人群、升级特效这类）是平面贴图，导出成 quad 并把节点名加 `[Sprite]` 前缀，Blender 里一搜就能整组隐藏；同时要用 **sprite 自己的 texture** 建材质（`sprite.data[2]`），别复用它的 UI 默认材质，否则全白。
 
-### 12. Luna / Soyoo base122 + brotli 内联变体（2026-10-30 diy 泳圈 / LAST ASYLUM 实战）
+### 12. Luna base122 + brotli 内联变体（2026-10-30 实战，项目 F / 项目 G）
 
 **包型**（第六种，与 11 的区别是**用 base122 而不是 base64**，而且解出来还有一层 brotli）：
 
@@ -678,7 +678,7 @@ def compute_world(node, nodes):
 
 ### 4b. 零缩放 ≠ 丢弃：可能是运行时隐藏态（2026-09-04 实战验证）
 
-游戏常用 `lscale = [0,0,0]` 来隐藏节点（例：羊剪毛后把 `wool` 节点缩放清零）。抓帧只捕捉到一个瞬间状态，若导出器把零缩放子树直接丢弃，就会"少模型"。要求全状态导出时：**把零缩放按单位缩放 (1,1,1) 还原**再算世界矩阵，而不是跳过/标记 dead。羊有毛/无毛两种状态即由此找回。
+游戏常用 `lscale = [0,0,0]` 来隐藏节点（例：某个部件被收起时，把它的节点缩放清零）。抓帧只捕捉到一个瞬间状态，若导出器把零缩放子树直接丢弃，就会"少模型"。要求全状态导出时：**把零缩放按单位缩放 (1,1,1) 还原**再算世界矩阵，而不是跳过/标记 dead。部件显示和隐藏两种状态即由此找回。
 
 ### 4c. 运行时 dump 的 Playwright 陷阱（2026-09-04 实战验证）
 
@@ -689,11 +689,11 @@ def compute_world(node, nodes):
 
 ### 4d. 运行时才生成/穿上的模型（mesh=null 的找回方法，2026-09-04 实战验证）
 
-症状：SMR（如顾客的 `SSD_衣服`）在场景里 mesh=null——毛衣是穿上瞬间才赋值，羊毛球是动态生成，抓帧时不存在。找回方法：
+症状：SMR（如角色身上的换装部件）在场景里 mesh=null——服装是穿上瞬间才赋值，有些道具是动态生成，抓帧时不存在。找回方法：
 
 1. 全量 dump 所有 MeshRenderer/SkinnedMeshRenderer（含 inactive），确认目标 SMR 的 mesh 确实为 null；
 2. **深扫 `cc.assetManager.assets`**：对每个已加载资产（Prefab 为主）递归遍历对象树（防环、深度 8），收集 mesh uuid 与材质名的**共现对**——prefab 里 mesh 和 material 是成对引用的；
-3. 按材质名（如「羊毛」「毛衣」「顾客穿毛衣」）反查目标 mesh uuid，确认它已在 mesh 缓存（dump_runtime.js 抓的是全部已加载 Mesh 资产）；
+3. 按材质名（如服装、道具对应的材质名）反查目标 mesh uuid，确认它已在 mesh 缓存（dump_runtime.js 抓的是全部已加载 Mesh 资产）；
 4. 导出时加一个 `__EXTRA_ASSETS` 根节点组，把找回的 mesh + 配对材质按地面高度摆成展示排（命名带中文名便于用户在 Blender 里识别）。
 
 ### 5. Mesh 与 .bin 匹配
@@ -732,16 +732,16 @@ ImageAsset -> native 文件 ".jpg" / ".png" / ".webp"
 
 ### 6b. SkinnedMeshRenderer 运行时蒙皮烘焙（2026-09 实战验证）
 
-序列化 JSON 不足以离线还原骨骼动画，但可以把运行时**当前姿态**烘焙进顶点，让角色/绵羊等蒙皮网格以真实 pose 出现在 GLB：
+序列化 JSON 不足以离线还原骨骼动画，但可以把运行时**当前姿态**烘焙进顶点，让角色、动物等蒙皮网格以真实 pose 出现在 GLB：
 
 - runtime dump 把每条 SkinnedMeshRenderer 存成 **array**（不是 dict）——多个实例共享同一 mesh 时按条保留，否则同名节点互相覆盖、实例丢失；
 - 每条记录抓：`smrPath`、mesh uuid、`_bindposes`、joints 的 `/` 路径、`nodePos`（该 SMR 节点世界坐标，用于事后与离线场景树配对）、SMR 世界矩阵；
 - 关节世界矩阵在 dump 时实时读各 joint node 的 `worldMatrix`（用上面的 `getel` 兼容访问，不要假设属性叫 `m12` 这类简写，joint 矩阵 m00..m15 才有效）；
 - 烘焙到 SMR 局部空间：`v' = inv(SMR_W) × Σ_k w_k × (JointWorld_k × BindPose_k) × v`，因此导出的 SMR 节点 glTF matrix 置单位阵即可；
-- 与离线场景树的实例/关节匹配：`smrPath|mesh` + 世界坐标距离最近者配对；姿态结果应与运行时截图一致（实战：21 条 skin 记录 → 8 个 skinned glTF mesh，人形与绵羊身体均正确）；
+- 与离线场景树的实例/关节匹配：`smrPath|mesh` + 世界坐标距离最近者配对；姿态结果应与运行时截图一致（实战：21 条 skin 记录 → 8 个 skinned glTF mesh，人形与动物身体均正确）；
 - 烘焙路径与静态网格路径分开处理，已烘焙的 SMR 不要再额外复合 invL 矩阵。
 
-### 6c. 蒙皮烘焙的两个坑（2026-09-09 推小火车实战验证）
+### 6c. 蒙皮烘焙的两个坑（2026-09-09 实战验证）
 
 - **dump 端 Mat4 序列化**：引擎 Mat4 属性是 `m00..m33`（两位数补零），访问器必须用 `m['m' + String(i).padStart(2,'0')]` 再回退 `.m[i]`。漏了 padStart 会拿到 undefined → 静默回退列主序 `.m` → 矩阵转置 → 蒙皮网格碎裂。
 - **path2idx 建 SMR 路径索引**：递归入口用 `rec(0, '')`、`full = prefix ? prefix+'/'+nm : nm`，根节点名不能拼两遍（`scene/scene/...` 会导致所有 smrPath 匹配失败 → Chick/Farmer 顶点留在世界空间）。个别实例 joint 路径解析失败（`0/` 开头）时，按同 mesh 最近 `nodePos` 借用成功实例的姿态。
@@ -755,9 +755,9 @@ ImageAsset -> native 文件 ".jpg" / ".png" / ".webp"
 
 运行时场景中 2D UI 通常在 `Game2DUI` / `Canvas` 子树下，节点没有 3D MeshRenderer 或 mesh 为空。在 dump 阶段记录 `is3Dnode` / `_layer` 信息，导出时直接排除该子树。
 
-**FX 遮罩判定只按材质名/自身名**（`黑底`/`brush-fade`/`fadeBrush`、自身名含 fade），识别后整棵平移到相机取景外（如 `__FX_far` y+500），只挪位不删除。**不要按祖先节点名含 `part`/`particle` 扫描**——实战教训：滚雪球项目里羊身模型节点恰名 `part_0000`（材质"羊-001"），名字规则把 3 只羊全部误隔离到远处，用户反馈"少了羊"。名字巧合不代表是特效，必须以材质/贴图性质为准。
+**FX 遮罩判定只按材质名/自身名**（`黑底`/`brush-fade`/`fadeBrush`、自身名含 fade），识别后整棵平移到相机取景外（如 `__FX_far` y+500），只挪位不删除。**不要按祖先节点名含 `part`/`particle` 扫描**——实战教训：某个项目里角色身体的节点恰好叫 `part_0000`，名字规则把 3 个角色全部误隔离到远处，用户反馈"少了角色"。名字巧合不代表是特效，必须以材质/贴图性质为准。
 
-**inactive 内容默认原位导出**（用户预期"不丢模型"包含抓帧时 `active=false` 的设备/升级建筑/后续关卡物件，如羊毛机罐子、烘干机）。只有两类例外需要挪位/分组：2D UI（屏幕空间坐标会污染世界盒）和全屏黑底遮罩（挡相机）。同一位置叠放多个互斥状态时在 README 里说明按名称筛选即可。
+**inactive 内容默认原位导出**（用户预期"不丢模型"包含抓帧时 `active=false` 的设备/升级建筑/后续关卡物件，如设备部件、待解锁的建筑）。只有两类例外需要挪位/分组：2D UI（屏幕空间坐标会污染世界盒）和全屏黑底遮罩（挡相机）。同一位置叠放多个互斥状态时在 README 里说明按名称筛选即可。
 
 ### 8. 验证清单
 
@@ -771,9 +771,9 @@ ImageAsset -> native 文件 ".jpg" / ".png" / ".webp"
 - 计算场景世界包围盒，确认范围合理（例如不出现所有节点集中在一点或坐标爆炸）；
 - 用 three.js / Playwright 渲染并截图，目视确认贴图与摆放正常。
 
-## Funplus / DataEye XTEA 内联包（Cocos Creator，2026-09-05 实战验证）
+## DataEye XTEA 内联包（Cocos Creator，2026-09-05 实战验证）
 
-特征：HTML title 为 "Funplus Playable Tech Team"，资产以 `window.__HTML_COMPRESSED`（base64 + pako inflateRaw）单块内联，`window.assetsMap = {path: size}` 按插入顺序顺序切片；部分脚本用 XTEA 加密（`XteaDecrypt.js`、`playableSdkInit.js`、`analyticsInit.js`）；Cocos 主逻辑在 `assets/main/index.js`（明文 SystemJS bundle，未加密）。
+特征：HTML title 是发行商 playable 团队名，资产以 `window.__HTML_COMPRESSED`（base64 + pako inflateRaw）单块内联，`window.assetsMap = {path: size}` 按插入顺序顺序切片；部分脚本用 XTEA 加密（`XteaDecrypt.js`、`playableSdkInit.js`、`analyticsInit.js`）；Cocos 主逻辑在 `assets/main/index.js`（明文 SystemJS bundle，未加密）。
 
 ### 解包步骤
 
@@ -884,7 +884,7 @@ Cocos3 包则更适合先用运行时 JS dump 场景图，再离线生成 GLB；
 
 ## 动画数据逆向（Luna/Unity 包）
 
-用户问"XX 动画怎么做的"时的查法（以 Township 解救 playable 为例，2026-09-17 验证）：
+用户问"XX 动画怎么做的"时的查法（以某个 playable 为例，2026-09-17 验证）：
 
 - 动画全在主清单 manifest（如 unknown_36.json）的 animation-clips / animator-controllers 键里。
 - clip data 格式：[名称, 版本, ..., 时长, [通道...], [], isLoop, sampleRate, ...]；
@@ -938,7 +938,7 @@ Cocos3 包则更适合先用运行时 JS dump 场景图，再离线生成 GLB；
 - `extract_20260909_traintoy/parse_exotic.py`（cconb 骨骼动画解析器）、`build_jumu_anim.py`（GLB 重建）、`verify_jumu_anim.py`（数学验证）、`render_anim.js`+`serve_anim/`（渲染验证）。
 - 交付 `deliver/jumu_anim.glb`（蒙皮+动画，Blender 可直接导入播放）+ `deliver/jumu_animation.json`（原始关键帧）。
 
-## Cocos3 assetmap「PlayCools 变体」+ 骨骼烘焙全量导出（2026-09-21 六边形清理泳池实战）
+## Cocos3 assetmap 变体 + 骨骼烘焙全量导出（2026-09-21 实战，项目 D）
 
 ### 1. 包体识别与解包
 - HTML 标志 `window.__PLAYABLETOOLS_FORMAT__="cocos3-assetmap"`，但主块编码是
@@ -979,7 +979,7 @@ Cocos3 包则更适合先用运行时 JS dump 场景图，再离线生成 GLB；
 `extract_20260921_poolcools/`：`unpack_main.py`、`dump_assetmap.js`、`dump_runtime2.js`、`export_glb.py`、`export_obj.py`、`verify_glb.py`、`render_glb.js`、`analyze*.py`。
 交付 `scene_reconstructed_textured/scene_textured.glb`（4582 节点/1204 实例/398,529 面/6.5MB）+ OBJ 兜底 + 74 张贴图 + README。
 
-## White Bear Studio / Century Games「polar」单文件 Cocos3 包（2026-10-16 STPL307 轨道扩张实战）
+## Super HTML 单文件包（Cocos3，2026-10-16 实战，项目 E）
 
 ### 1. 包体识别与三层解包
 - 外壳：`<script super-html="keep">` 里 `(function(){ var polar = window.polar ... })()`，标记 `window.polar.packageToolVersion`；主块是
