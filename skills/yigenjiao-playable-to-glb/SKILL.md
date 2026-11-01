@@ -1,6 +1,6 @@
 ---
-name: luna-playable-extract
-title: "luna-playable-extract"
+name: yigenjiao-playable-to-glb
+title: "一根蕉 · 试玩广告转 GLB"
 summary: "从 Luna / DataEye 试玩广告 HTML 中提取模型、贴图，并在可行时绑定材质、还原场景摆放、导出 Blender 可用 GLB/OBJ。"
 description: "This skill should be used when the user provides a Luna/DataEye/playable ad HTML file and wants to extract 3D models, all scene textures, bind materials, reconstruct scene placement, or export assets for Blender/Unity. It captures the proven workflow for Brotli/base64/base122 resource extraction, mesh buffer decoding, material-texture mapping, static scene reconstruction, and GLB packaging."
 read_when:
