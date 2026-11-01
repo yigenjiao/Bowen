@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<!--
+  README 封面源文件。2400×904，用浏览器截图生成 assets/cover.png（再转成 cover.webp 给 README、cover.jpg 给分享卡片）。
+  重新生成：在仓库根目录起一个静态服务器，然后运行 .github/cover/render.js（见文件头注释）。
+-->
+<title>Bowen cover</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--ember:#e6480f;--amber:#c98a2b;--text:#f0e9dc;--muted:rgba(240,233,220,.62);--faint:rgba(240,233,220,.36)}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:2400px;height:904px;background:transparent}
+body{font-family:"Noto Sans SC","Inter",sans-serif;color:var(--text);-webkit-font-smoothing:antialiased}
+.card{position:relative;width:2400px;height:904px;border-radius:44px;overflow:hidden;
+  background:
+    radial-gradient(900px 700px at 74% 52%, rgba(230,72,15,.22), transparent 62%),
+    radial-gradient(600px 500px at 88% 18%, rgba(201,138,43,.12), transparent 70%),
+    radial-gradient(1400px 900px at 10% 110%, rgba(230,72,15,.06), transparent 60%),
+    #0d0b09}
+/* 细网格 */
+.card::before{content:"";position:absolute;inset:0;
+  background-image:linear-gradient(rgba(240,233,220,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(240,233,220,.035) 1px,transparent 1px);
+  background-size:80px 80px;mask-image:radial-gradient(1100px 800px at 72% 50%,#000 20%,transparent 75%)}
+/* 颗粒 */
+.card::after{content:"";position:absolute;inset:0;opacity:.18;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+#gl{position:absolute;right:-40px;top:0;width:1300px;height:904px}
+
+.copy{position:absolute;left:132px;top:96px;z-index:2}
+.kicker{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:32px;letter-spacing:.34em;color:var(--ember);display:flex;align-items:center;gap:22px}
+.kicker::before{content:"";width:46px;height:4px;background:var(--ember)}
+.word{font-family:"Inter Display","Inter",sans-serif;font-weight:900;font-size:272px;line-height:.86;letter-spacing:-.035em;margin:34px 0 0 -10px;display:flex;align-items:flex-end}
+.word .o{position:relative;display:inline-block}
+.word .dot{display:inline-block;width:64px;height:64px;background:var(--ember);margin:0 0 14px 22px}
+.tagline{font-weight:900;font-size:104px;line-height:1.1;margin-top:58px;letter-spacing:.02em}
+.tagline em{font-style:normal;color:var(--ember)}
+.sub{font-size:34px;color:var(--muted);margin-top:30px;line-height:1.65;font-weight:400}
+.chips{position:absolute;left:132px;bottom:72px;font-family:"JetBrains Mono",monospace;font-weight:500;font-size:27px;letter-spacing:.2em;color:var(--faint);display:flex;gap:46px;z-index:2}
+.chips span::before{content:"· ";color:var(--ember)}
+
+.plus{position:absolute;font-family:"JetBrains Mono",monospace;font-size:44px;color:rgba(240,233,220,.25);z-index:2}
+.vert{position:absolute;right:46px;top:50%;transform:translateY(-50%) rotate(-90deg);transform-origin:center;font-family:"JetBrains Mono",monospace;font-size:20px;letter-spacing:.32em;color:var(--faint);white-space:nowrap;z-index:2;translate:46% 0}
+
+/* 体检标注 */
+.call{position:absolute;z-index:3;font-family:"JetBrains Mono",monospace;font-size:22px;letter-spacing:.06em;color:var(--text);display:flex;align-items:center;gap:12px;white-space:nowrap}
+.call i{font-style:normal;font-weight:700;font-size:16px;padding:4px 9px;border-radius:5px;letter-spacing:.1em}
+.call .ok{background:rgba(127,176,105,.18);color:#9ccf84}
+.call .err{background:#ff5a3c;color:#fff}
+.call::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--ember);box-shadow:0 0 14px var(--ember)}
+.call.r::before{order:3}
+.badge{position:absolute;right:250px;bottom:118px;z-index:3;font-family:"JetBrains Mono",monospace;font-size:26px;letter-spacing:.24em;padding:16px 26px;border:1px solid rgba(240,233,220,.22);border-radius:10px;background:rgba(13,11,9,.72);backdrop-filter:blur(6px)}
+.badge b{color:var(--ember);font-weight:700}
+</style>
+</head>
+<body>
+<div class="card">
+  <canvas id="gl"></canvas>
+
+  <div class="copy">
+    <div class="kicker">BLACK BOX → WHITE BOX</div>
+    <div class="word">BOWEN<span class="dot"></span></div>
+    <div class="tagline">把黑盒，拆成<em>白盒</em>。</div>
+    <div class="sub">3D 技术美术。Playable / Cocos 逆向提取、GLB 资源还原、<br>Shader 复刻，以及把踩过的坑做成工具。</div>
+  </div>
+  <div class="chips"><span>COCOS 3.x</span><span>LUNA / UNITY</span><span>GLB PIPELINE</span><span>SHADER REBUILD</span></div>
+
+  <span class="plus" style="left:1340px;top:70px">+</span>
+  <span class="plus" style="left:1500px;top:150px">+</span>
+  <span class="plus" style="left:2210px;top:770px">+</span>
+  <div class="vert">BOWEN_TECH_ART — PIPELINE_READY ◆</div>
+
+  <div class="call r" style="left:1400px;top:236px"><i class="ok">OK</i>NORMAL · unit length</div>
+  <div class="call r" style="left:1350px;top:650px"><i class="ok">OK</i>IBM · column-major</div>
+  <div class="call" style="left:2050px;top:200px">UV0 · flipY<i class="ok">OK</i></div>
+  <div class="call" style="left:2010px;top:470px">COLOR_0<i class="err">DROP</i></div>
+  <div class="badge">BOWEN <b>//</b> GLB INSPECTOR</div>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { TeapotGeometry } from 'three/addons/geometries/TeapotGeometry.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+const canvas = document.getElementById('gl');
+const W = canvas.clientWidth, H = canvas.clientHeight;
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1);
+renderer.setSize(W, H, false);
+renderer.localClippingEnabled = true;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+
+const scene = new THREE.Scene();
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = 0.25;
+
+const camera = new THREE.PerspectiveCamera(30, W / H, 0.1, 100);
+camera.position.set(4.6, 2.6, 7.4);
+camera.lookAt(0.05, 0.05, 0);
+
+// 一刀斜切：左边实体（黑盒），右边线框（白盒）
+// clippingPlanes 是世界空间：法线取镜头的“右方向”，让切口竖着把画面一分为二
+const n = new THREE.Vector3(0.86, 0.12, -0.5).normalize();
+const keepSolid = new THREE.Plane(n.clone().negate(), 0.0);
+const keepWire = new THREE.Plane(n.clone(), 0.0);
+
+const geo = new TeapotGeometry(1, 14, true, true, true, false, true);
+const group = new THREE.Group();
+group.rotation.set(0.08, -0.55, 0.04);
+scene.add(group);
+
+const solid = new THREE.Mesh(geo, new THREE.MeshPhysicalMaterial({
+  color: 0x16110e, roughness: 0.32, metalness: 0.15, clearcoat: 1, clearcoatRoughness: 0.18,
+  clippingPlanes: [keepSolid], side: THREE.DoubleSide,
+}));
+group.add(solid);
+
+const wire = new THREE.LineSegments(new THREE.WireframeGeometry(geo), new THREE.LineBasicMaterial({
+  color: 0xf0e9dc, transparent: true, opacity: 0.42, clippingPlanes: [keepWire],
+}));
+group.add(wire);
+
+const pts = new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xe6480f, size: 3, sizeAttenuation: false, clippingPlanes: [keepWire] }));
+group.add(pts);
+
+// 法线针：只在线框那一半画
+{
+  const pos = geo.attributes.position, nor = geo.attributes.normal, arr = [];
+  const p = new THREE.Vector3(), q = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i += 5) {
+    p.fromBufferAttribute(pos, i); q.fromBufferAttribute(nor, i).multiplyScalar(0.09).add(p);
+    arr.push(p.x, p.y, p.z, q.x, q.y, q.z);
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(arr, 3));
+  group.add(new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0xe6480f, transparent: true, opacity: 0.45, clippingPlanes: [keepWire] })));
+}
+
+// 切面上的光
+{
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const x = c.getContext('2d'), gr = x.createRadialGradient(128, 128, 0, 128, 128, 128);
+  gr.addColorStop(0, 'rgba(255,140,60,.95)'); gr.addColorStop(.35, 'rgba(230,72,15,.55)'); gr.addColorStop(1, 'rgba(230,72,15,0)');
+  x.fillStyle = gr; x.fillRect(0, 0, 256, 256);
+  const disc = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 4.2), new THREE.MeshBasicMaterial({
+    map: new THREE.CanvasTexture(c), transparent: true, opacity: 0.42, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+  }));
+  disc.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), n);
+  scene.add(disc);
+  // 切口描边
+  const ring = new THREE.Mesh(new THREE.RingGeometry(1.95, 1.965, 128), new THREE.MeshBasicMaterial({ color: 0xe6480f, transparent: true, opacity: .55, side: THREE.DoubleSide }));
+  ring.quaternion.copy(disc.quaternion);
+  scene.add(ring);
+}
+
+// 灯：琥珀主光 + 余烬轮廓光 + 冷色补光
+const key = new THREE.DirectionalLight(0xffc28a, 2.2); key.position.set(-3, 4, 5); scene.add(key);
+const rim = new THREE.DirectionalLight(0xe6480f, 9); rim.position.set(-4, 1.5, -5); scene.add(rim);
+const rim2 = new THREE.DirectionalLight(0xff6a2a, 4); rim2.position.set(5, 3, -4); scene.add(rim2);
+const fill = new THREE.DirectionalLight(0x6f8fb0, 0.6); fill.position.set(4, -2, 3); scene.add(fill);
+
+// 地面阴影光晕
+{
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const x = c.getContext('2d'), gr = x.createRadialGradient(64, 64, 0, 64, 64, 64);
+  gr.addColorStop(0, 'rgba(0,0,0,.7)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+  x.fillStyle = gr; x.fillRect(0, 0, 128, 128);
+  const sh = new THREE.Mesh(new THREE.PlaneGeometry(5, 2.2), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false }));
+  sh.rotation.x = -Math.PI / 2; sh.position.y = -0.95; scene.add(sh);
+}
+
+renderer.render(scene, camera);
+requestAnimationFrame(() => { renderer.render(scene, camera); document.fonts.ready.then(() => { window.__ready = true; }); });
+</script>
+</body>
+</html>
