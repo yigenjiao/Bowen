@@ -443,7 +443,7 @@ async function runChecks(ctx) {
   const normBad = [], normMissing = [], idxBad = [], degen = [], posNaN = [], posMinMax = [], fmtBad = [];
   const colorTint = [], colorBlack = [], uvMissing = [], uvWeird = [], weightBad = [], jointBad = [], f64 = [];
   // 可自动修复的项：记下具体位置，交给 applyFixes()
-  const fixes = ctx.fixes = { uri: false, f64: new Set(), minmax: new Map(), normals: new Set(), weights: new Set(), ibm: new Map(), colorBlack: [], colorTint: [] };
+  const fixes = ctx.fixes = { uri: false, f64: new Set(), minmax: new Map(), normals: new Set(), weights: new Set(), ibm: new Map(), indices: new Map(), colorBlack: [], colorTint: [] };
   const plainAcc = i => { const a = json.accessors?.[i]; return a && a.bufferView != null && !a.sparse; };
   const meshesWithSkin = new Map(); // meshIdx -> [skinIdx]
   (json.nodes || []).forEach(n => { if (n.mesh != null && n.skin != null) (meshesWithSkin.get(n.mesh) || meshesWithSkin.set(n.mesh, []).get(n.mesh)).push(n.skin); });
@@ -493,6 +493,7 @@ async function runChecks(ctx) {
         let oob = 0, maxI = 0;
         for (const v of idx.data) { if (v >= vc) oob++; if (v > maxI) maxI = v; }
         if (oob) idxBad.push({ mi, s: `${where}：${oob} 个索引 ≥ 顶点数 ${vc}（最大 ${maxI}）` });
+        if (oob && (p.mode ?? 4) === 4 && plainAcc(p.indices)) fixes.indices.set(p.indices, Math.min(vc, fixes.indices.get(p.indices) ?? Infinity));
       }
     }
     const mode = p.mode ?? 4;
@@ -712,6 +713,7 @@ const FIX_ITEMS = [
   ['uri', '删除 GLB 里多余的 buffer uri', '让加载器读包内的数据，不再去外面找 .bin', true],
   ['f64', '把按 8 字节写入的数据转回 float32', '只处理“声明 FLOAT、实际是 float64”的数据', true],
   ['ibm', '转置写反的骨骼矩阵', '把行主序的 bindposes 改回 glTF 要求的列主序', true],
+  ['indices', '删除引用不存在顶点的三角形', '坏三角形会被拉成尖刺或乱面，删掉后那里会留一个小洞，需要回建模软件补面', true],
   ['normals', '法线归一化', '把每条法线的长度统一成 1，零向量保持不动', true],
   ['weights', '蒙皮权重归一化', '每个顶点的权重和调成 1，全零的绑到第一根骨骼', true],
   ['minmax', '重算 POSITION 的 min / max', '按实际顶点数据重新计算包围盒', true],
@@ -783,6 +785,26 @@ function applyFixes(selected) {
       writeAccessor(json, buf, i, d);
     }
     done.push(`转置了 ${cnt} 个骨骼矩阵`);
+  }
+  if (selected.has('indices') && fx.indices.size) {
+    let removed = 0;
+    for (const [i, vc] of fx.indices) {
+      const I = R.read(i); if (!I) continue;
+      const a = json.accessors[i], keep = [];
+      for (let t = 0; t + 2 < I.count; t += 3) {
+        const x = I.data[t], y = I.data[t + 1], z = I.data[t + 2];
+        if (x < vc && y < vc && z < vc) keep.push(x, y, z); else removed++;
+      }
+      const T = a.componentType === 5121 ? Uint8Array : a.componentType === 5123 ? Uint16Array : Uint32Array;
+      const arr = T.from(keep), bytes = arr.buffer.slice(0, Math.ceil(arr.byteLength / 4) * 4 || 4);
+      const pad = (4 - buf.byteLength % 4) % 4, off = buf.byteLength + pad;
+      const grown = new Uint8Array(off + bytes.byteLength); grown.set(new Uint8Array(buf)); grown.set(new Uint8Array(bytes), off); buf = grown.buffer;
+      const old = json.bufferViews[a.bufferView];
+      json.bufferViews.push({ buffer: 0, byteOffset: off, byteLength: arr.byteLength, ...(old.target ? { target: old.target } : {}) });
+      a.bufferView = json.bufferViews.length - 1; delete a.byteOffset; a.count = keep.length; delete a.min; delete a.max;
+    }
+    R.buffers[0] = buf; R.cache.clear();
+    done.push(`删除了 ${removed} 个引用不存在顶点的三角形（那里会留小洞，需要补面）`);
   }
   if (selected.has('normals') && fx.normals.size) {
     for (const i of fx.normals) {
@@ -1143,7 +1165,7 @@ function fixedBanner() {
   const f = state.fixInfo; if (!f) return '';
   return `<div class="fixed"><b>✓ 已生成修复后的文件</b>
     <ul>${f.done.map(d => `<li>${esc(d)}</li>`).join('')}</ul>
-    下面是修复后重新体检的结果。索引越界这类没法自动修的问题会继续列出来。
+    下面是修复后重新体检的结果。零缩放节点这类不该自动改的问题会继续列出来。
     <div class="acts"><button class="btn primary" id="btnFixDl">下载 ${esc(state.fileName)}</button></div></div>`;
 }
 
