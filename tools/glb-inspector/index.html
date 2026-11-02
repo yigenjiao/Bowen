@@ -493,7 +493,7 @@ async function runChecks(ctx) {
         let oob = 0, maxI = 0;
         for (const v of idx.data) { if (v >= vc) oob++; if (v > maxI) maxI = v; }
         if (oob) idxBad.push({ mi, s: `${where}：${oob} 个索引 ≥ 顶点数 ${vc}（最大 ${maxI}）` });
-        if (oob && (p.mode ?? 4) === 4 && plainAcc(p.indices)) fixes.indices.set(p.indices, Math.min(vc, fixes.indices.get(p.indices) ?? Infinity));
+        if (oob && (p.mode ?? 4) === 4 && plainAcc(p.indices)) fixes.indices.set(p.indices, { vc: Math.min(vc, fixes.indices.get(p.indices)?.vc ?? Infinity), pos: at.POSITION });
       }
     }
     const mode = p.mode ?? 4;
@@ -713,7 +713,8 @@ const FIX_ITEMS = [
   ['uri', '删除 GLB 里多余的 buffer uri', '让加载器读包内的数据，不再去外面找 .bin', true],
   ['f64', '把按 8 字节写入的数据转回 float32', '只处理“声明 FLOAT、实际是 float64”的数据', true],
   ['ibm', '转置写反的骨骼矩阵', '把行主序的 bindposes 改回 glTF 要求的列主序', true],
-  ['indices', '删除引用不存在顶点的三角形', '坏三角形会被拉成尖刺或乱面，删掉后那里会留一个小洞，需要回建模软件补面', true],
+  ['indices', '删除引用不存在顶点的三角形', '坏三角形会被拉成尖刺或乱面，删掉后那里会留一个小洞', true],
+  ['fillHoles', '自动补上删除后留下的洞', '按旁边那半个四边形推出缺的顶点，只在找到唯一答案时补，UV 沿用顶点原有的值；补不上的会提示你手动补', false],
   ['normals', '法线归一化', '把每条法线的长度统一成 1，零向量保持不动', true],
   ['weights', '蒙皮权重归一化', '每个顶点的权重和调成 1，全零的绑到第一根骨骼', true],
   ['minmax', '重算 POSITION 的 min / max', '按实际顶点数据重新计算包围盒', true],
@@ -722,6 +723,7 @@ const FIX_ITEMS = [
 ];
 function fixCount(fx, key) {
   const v = fx[key];
+  if (key === 'fillHoles') return fx.indices?.size || 0;
   return v == null ? 0 : typeof v === 'boolean' ? +v : v instanceof Map || v instanceof Set ? v.size : v.length;
 }
 function canFix() {
@@ -787,14 +789,45 @@ function applyFixes(selected) {
     done.push(`转置了 ${cnt} 个骨骼矩阵`);
   }
   if (selected.has('indices') && fx.indices.size) {
-    let removed = 0;
-    for (const [i, vc] of fx.indices) {
-      const I = R.read(i); if (!I) continue;
-      const a = json.accessors[i], keep = [];
+    let removed = 0, filled = 0, holes = 0;
+    const fill = selected.has('fillHoles');
+    for (const [i, info] of fx.indices) {
+      const { vc, pos } = info, I = R.read(i); if (!I) continue;
+      const a = json.accessors[i], keep = [], bad = [];
       for (let t = 0; t + 2 < I.count; t += 3) {
-        const x = I.data[t], y = I.data[t + 1], z = I.data[t + 2];
-        if (x < vc && y < vc && z < vc) keep.push(x, y, z); else removed++;
+        const tri = [I.data[t], I.data[t + 1], I.data[t + 2]];
+        if (tri.every(v => v < vc)) keep.push(...tri); else { bad.push(tri); removed++; }
       }
+      if (fill) {
+        const P = R.read(pos)?.data;
+        const nb = new Map(), tris = new Set(), key = (x, y, z) => [x, y, z].sort((m, n) => m - n).join(',');
+        const link = (u, v) => { (nb.get(u) || nb.set(u, new Set()).get(u)).add(v); (nb.get(v) || nb.set(v, new Set()).get(v)).add(u); };
+        for (let t = 0; t < keep.length; t += 3) { const [x, y, z] = keep.slice(t, t + 3); link(x, y); link(y, z); link(z, x); tris.add(key(x, y, z)); }
+        const at3 = v => [P[v * 3], P[v * 3 + 1], P[v * 3 + 2]];
+        for (const tri of bad) {
+          const ok = tri.filter(v => v < vc);
+          if (!P || ok.length !== 2 || ok[0] === ok[1]) { holes++; continue; }
+          const [va, vd] = ok;
+          // 找共用 a-d 这条边的另一半三角形
+          let b = -1, aToD = false;
+          for (let t = 0; t < keep.length && b < 0; t += 3) {
+            const q = keep.slice(t, t + 3), ia = q.indexOf(va), id = q.indexOf(vd);
+            if (ia >= 0 && id >= 0) { b = q[3 - ia - id]; aToD = (ia + 1) % 3 === id; }
+          }
+          if (b < 0) { holes++; continue; }
+          // 四边形的第四个角：c ≈ a + d - b
+          const A = at3(va), D = at3(vd), B = at3(b), T = [A[0] + D[0] - B[0], A[1] + D[1] - B[1], A[2] + D[2] - B[2]];
+          const tol = 0.05 * Math.max(Math.hypot(A[0] - D[0], A[1] - D[1], A[2] - D[2]), 1e-6);
+          const cand = new Set();
+          for (const v of [...(nb.get(va) || []), ...(nb.get(vd) || [])]) {
+            if (v === va || v === vd || v === b || tris.has(key(va, vd, v))) continue;
+            const C = at3(v); if (Math.hypot(C[0] - T[0], C[1] - T[1], C[2] - T[2]) <= tol) cand.add(v);
+          }
+          if (cand.size !== 1) { holes++; continue; }
+          const c = [...cand][0], nt = aToD ? [vd, va, c] : [va, vd, c]; // 朝向和另一半保持一致
+          keep.push(...nt); tris.add(key(...nt)); link(nt[0], nt[1]); link(nt[1], nt[2]); link(nt[2], nt[0]); filled++;
+        }
+      } else holes += bad.length;
       const T = a.componentType === 5121 ? Uint8Array : a.componentType === 5123 ? Uint16Array : Uint32Array;
       const arr = T.from(keep), bytes = arr.buffer.slice(0, Math.ceil(arr.byteLength / 4) * 4 || 4);
       const pad = (4 - buf.byteLength % 4) % 4, off = buf.byteLength + pad;
@@ -804,7 +837,9 @@ function applyFixes(selected) {
       a.bufferView = json.bufferViews.length - 1; delete a.byteOffset; a.count = keep.length; delete a.min; delete a.max;
     }
     R.buffers[0] = buf; R.cache.clear();
-    done.push(`删除了 ${removed} 个引用不存在顶点的三角形（那里会留小洞，需要补面）`);
+    done.push(`删除了 ${removed} 个引用不存在顶点的三角形`);
+    if (filled) done.push(`自动补上了 ${filled} 个洞（沿用周围顶点的 UV）`);
+    if (holes) done.push(`还有 ${holes} 处小洞需要回建模软件补面`);
   }
   if (selected.has('normals') && fx.normals.size) {
     for (const i of fx.normals) {
@@ -1148,6 +1183,8 @@ function renderChecks() {
     ${passed.length ? `<div class="oklist">${passed.map(p => `<div>${esc(p)}</div>`).join('')}</div>` : ''}`;
   $$('[data-go]', $('#p-check')).forEach(b => b.onclick = () => locate(issues[+b.dataset.go]));
   const fb = $('#btnFix'); if (fb) fb.onclick = runFix;
+  const fh = $('[data-fix="fillHoles"]'), fi = $('[data-fix="indices"]');
+  if (fh && fi) { fh.onchange = () => { if (fh.checked) fi.checked = true; }; fi.onchange = () => { if (!fi.checked) fh.checked = false; }; }
   const dl = $('#btnFixDl'); if (dl) dl.onclick = () => { const a = document.createElement('a'); a.href = state.fixInfo.url; a.download = state.fileName; a.click(); };
 }
 
@@ -1165,12 +1202,14 @@ function fixedBanner() {
   const f = state.fixInfo; if (!f) return '';
   return `<div class="fixed"><b>✓ 已生成修复后的文件</b>
     <ul>${f.done.map(d => `<li>${esc(d)}</li>`).join('')}</ul>
+    ${f.done.some(d => d.includes('需要回建模软件补面')) ? `<div style="margin:6px 0;padding:8px 10px;border-left:2px solid var(--warn);background:rgba(227,163,58,.08)">手动补面：在 Blender 里选中洞边上的 3 个顶点，按 <b>F</b>。UV 存在顶点上，新面会沿用原有的值；如果那一小块贴图有点歪，在 UV 编辑器里选中这 3 个点，用“吸附 → 选中项到相邻未选中项”对齐，其他面不用动。</div>` : ''}
     下面是修复后重新体检的结果。零缩放节点这类不该自动改的问题会继续列出来。
     <div class="acts"><button class="btn primary" id="btnFixDl">下载 ${esc(state.fileName)}</button></div></div>`;
 }
 
 async function runFix() {
   const selected = new Set($$('[data-fix]').filter(x => x.checked).map(x => x.dataset.fix));
+  if (selected.has('fillHoles')) selected.add('indices');
   if (!selected.size) { alert('先勾选要修复的项目'); return; }
   $('#loading').classList.add('on');
   try {
