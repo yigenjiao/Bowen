@@ -47,6 +47,25 @@ A tiny orange-and-white cat wearing a banana costume with pink cat ears, standin
 
 ---
 
+### 第 0 步结果：定调图（2026-11-02 选定）
+
+![定调图](concept/keyart.webp)
+
+第一轮出的图角色和材质很好，但太温馨（暖台灯、月亮、绿植），像治愈系绘本。第二轮去掉暖光、加入车灯和影子手，选定这张。
+
+**风格规范（后面所有资产、灯光、后期都照这个来）**
+
+| 项目 | 规范 |
+| --- | --- |
+| 明暗 | 画面约七成沉在暗部；只有一两束光，光外的东西看不清 |
+| 主光 | 一束冷蓝色的斜光（窗帘缝或车灯），最亮处约 `#cae5ff`，光里能看到浮尘 |
+| 暗部 | 深海军蓝到近黑：`#273451`、`#141c2f`、`#0c0f17`、`#05060a`；不用纯灰 |
+| 唯一的暖色 | 只有香蕉猫是暖的（香蕉黄、橘色斑、奶白毛，暖白高光约 `#fde0cc`）；场景里不出现台灯、月亮这类暖色或“温馨”元素 |
+| 角色质感 | 搪胶玩具 / 软陶感，表面光滑，边缘圆润，眼睛有高光 |
+| 场景质感 | 真实材质但偏暗：带反光的旧木地板、粗棉格子被子、绒布；做旧但不脏 |
+| 威胁 | 用影子和剪影表现（床侧的影子手），不直接露出完整的怪物 |
+| 镜头 | 游戏里用侧面横版视角；定调图的低机位透视只当海报用 |
+
 ## 第 1 步：资产清单（Claude 已列好）
 
 | # | 资产 | 三角面上限 | 备注 |
@@ -83,6 +102,32 @@ A single [资产], [材质], stylized game asset in a dark storybook style, clea
 ```
 
 **例子**：`A single fluffy slipper, faded purple felt with worn edges, ...`
+
+### 第一批（11-08 前）：4 个核心资产，直接复制
+
+每张都垫上定调图 `concept/keyart.webp`。图生 3D 需要看清造型，所以单体图要**打亮、白底**，不要照搬定调图的暗光。暗的氛围交给游戏里的灯光。
+
+**1. 香蕉猫**（图生 3D 要正面、四肢张开，才能自动绑骨骼）
+```
+A single small cat character wearing a yellow banana costume hood with a brown stem on top and pink inner cat ears, orange and white face, yellow scarf, white body, short legs, small curled tail. Vinyl toy / soft clay look, smooth surfaces, rounded edges, glossy eyes. Full body, front view, A-pose with arms slightly away from the body, neutral calm expression, centered, plain light gray background, soft even lighting, no shadow, no text.
+```
+
+**2. 影子手**（怪物；游戏里会加烟雾和半透明效果，这里先要一个干净的雕塑造型）
+```
+A single giant elongated hand reaching downward, very long thin fingers with slightly too many joints, smooth matte surface in very dark navy blue, sculptural and eerie but not gory, stylized game asset. 3/4 view, full hand and part of the forearm in frame, centered, plain light gray background, soft even lighting, no shadow, no text.
+```
+
+**3. 床**（床底要留出明显的空隙，香蕉猫要能钻进去）
+```
+A single large bed with a dark wooden frame and short legs, a clear empty gap under the bed, thick plaid duvet in dark navy blue hanging over the edge, one pillow, slightly messy as if someone tossed and turned all night. Stylized realistic game asset, worn but clean. 3/4 side view, whole bed in frame, centered, plain light gray background, soft even lighting, no shadow, no text.
+```
+
+**4. 拖鞋**（开口要大，香蕉猫要能钻进去）
+```
+A single fluffy plush house slipper, beige fleece with soft pile texture, thick rounded sole, a large open toe cover with a dark opening, slightly worn. Stylized realistic game asset. 3/4 side view, whole slipper in frame, centered, plain light gray background, soft even lighting, no shadow, no text.
+```
+
+**验收**：单体、白底、不裁切；香蕉猫正面四肢张开；床底有空隙；拖鞋开口够大。
 
 **验收**：只有一个物体、四周留白、没有被裁切；风格和第 0 步的定调图一致。
 
