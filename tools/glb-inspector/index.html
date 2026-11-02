@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GLB 体检台 · Bowen</title>
-<meta name="description" content="拖进一个 GLB / glTF，在浏览器里预览并自动体检：bindposes 主序、COLOR_0 染色、法线、索引越界、蒙皮权重、buffer uri 等常见导出坑。文件不上传。">
+<meta name="description" content="拖进一个 GLB / glTF，在浏览器里预览、自动体检并一键修复：bindposes 主序、COLOR_0 染色、法线、索引越界、蒙皮权重、buffer uri 等常见导出坑。文件不上传。">
 <link rel="icon" type="image/png" href="../../assets/favicon.png">
 <link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -79,6 +79,20 @@ aside{border-right:1px solid var(--line);display:flex;flex-direction:column;min-
 .issue .body ul{padding-left:16px;margin-top:4px}
 .issue .fix{margin-top:6px;padding:8px 10px;border-left:2px solid var(--ember);background:rgba(230,72,15,.06);color:var(--text)}
 .issue .go{margin-top:8px}
+.fixbox{border:1px solid rgba(230,72,15,.4);border-radius:10px;padding:12px 14px;margin-bottom:12px;background:linear-gradient(180deg,rgba(230,72,15,.08),rgba(230,72,15,.02))}
+.fixbox .fh{display:flex;align-items:baseline;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.fixbox .fh b{font-weight:500;font-size:14px}
+.fixbox .fh span{font-size:11.5px;color:var(--faint)}
+.fixbox label{display:flex;gap:9px;align-items:flex-start;padding:6px 0;font-size:12.5px;cursor:pointer;line-height:1.5}
+.fixbox label input{margin-top:3px;accent-color:var(--ember)}
+.fixbox label small{display:block;color:var(--faint);font-size:11px}
+.fixbox label em{font-style:normal;font-family:var(--mono);font-size:10.5px;color:var(--amber);margin-left:4px}
+.fixbox .acts{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+.fixbox .note{font-size:12px;color:var(--muted);line-height:1.7}
+.fixed{border:1px solid rgba(127,176,105,.5);background:rgba(127,176,105,.08);border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:12.5px;line-height:1.8}
+.fixed b{font-weight:500;font-size:14px;color:var(--ok)}
+.fixed ul{padding-left:16px;color:var(--muted)}
+.fixed .acts{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap}
 .oklist{margin-top:10px;font-size:12px;color:var(--faint);line-height:1.9}
 .oklist div::before{content:"✓ ";color:var(--ok)}
 
@@ -206,7 +220,7 @@ body.dragging .drop .box{border-color:var(--ember);transform:scale(1.02)}
         <img class="cat" src="../../assets/banana-cat.webp" alt="香蕉猫">
         <h2>把 GLB 拖进来，香蕉猫帮你查</h2>
         <p>支持 <b>.glb</b>、内嵌资源的 <b>.gltf</b>，或把 <b>.gltf + .bin + 贴图</b> 一起拖进来。<br>
-          加载后自动检查导出常见的坑：bindposes 主序、COLOR_0 染色、法线、索引越界、蒙皮权重、buffer uri……</p>
+          加载后自动检查导出常见的坑：bindposes 主序、COLOR_0 染色、法线、索引越界、蒙皮权重、buffer uri……<br>能修的问题可以一键修复，下载修好的新文件。</p>
         <div class="row">
           <label class="btn primary" for="file">选择文件</label>
           <button class="btn" data-sample="broken.glb">看坏样本</button>
@@ -388,6 +402,7 @@ async function runChecks(ctx) {
   /* --- buffer uri（坑 4）--- */
   (json.buffers || []).forEach((b, i) => {
     if (isGLB && i === 0 && b.uri) {
+      if (container.bin) ctx.fixes_uri = true;
       add('bufferUri', 'err', 'GLB 的 buffers[0] 带了 uri', { ref: '坑 4',
         body: `<code>buffers[0].uri = "${esc(b.uri.slice(0, 60))}"</code>。GLB 里只要 buffer 0 有 uri，加载器就会去外部找文件而不是用内嵌的 BIN chunk，three.js / Blender 报 <code>Failed to load buffer</code>。`,
         fix: '写 GLB 前 <code>gltf["buffers"][0].pop("uri", None)</code>；只有 .gltf + .bin 那份才保留 uri。' });
@@ -427,6 +442,9 @@ async function runChecks(ctx) {
   };
   const normBad = [], normMissing = [], idxBad = [], degen = [], posNaN = [], posMinMax = [], fmtBad = [];
   const colorTint = [], colorBlack = [], uvMissing = [], uvWeird = [], weightBad = [], jointBad = [], f64 = [];
+  // 可自动修复的项：记下具体位置，交给 applyFixes()
+  const fixes = ctx.fixes = { uri: false, f64: new Set(), minmax: new Map(), normals: new Set(), weights: new Set(), ibm: new Map(), colorBlack: [], colorTint: [] };
+  const plainAcc = i => { const a = json.accessors?.[i]; return a && a.bufferView != null && !a.sparse; };
   const meshesWithSkin = new Map(); // meshIdx -> [skinIdx]
   (json.nodes || []).forEach(n => { if (n.mesh != null && n.skin != null) (meshesWithSkin.get(n.mesh) || meshesWithSkin.set(n.mesh, []).get(n.mesh)).push(n.skin); });
 
@@ -437,6 +455,7 @@ async function runChecks(ctx) {
     if (!bv || users?.length !== 1 || bv.byteStride || !COMP[a.componentType]) return;
     const expect = a.count * NCOMP[a.type] * COMP[a.componentType].size;
     if (expect > 0 && bv.byteLength >= expect * 2) f64.push(i);
+    if (a.componentType === 5126 && bv.byteLength === expect * 2) fixes.f64.add(i);
   });
 
   (json.meshes || []).forEach((m, mi) => m.primitives.forEach((p, pi) => {
@@ -459,9 +478,12 @@ async function runChecks(ctx) {
     let nan = 0; const mn = [Infinity, Infinity, Infinity], mx = [-Infinity, -Infinity, -Infinity];
     for (let k = 0; k < vc; k++) for (let j = 0; j < 3; j++) { const v = pos.data[k * 3 + j]; if (!Number.isFinite(v)) nan++; else { if (v < mn[j]) mn[j] = v; if (v > mx[j]) mx[j] = v; } }
     if (nan) posNaN.push({ mi, s: `${where}：${nan} 个分量是 NaN/Inf` });
+    let mmBad = true;
     if (!pa.min || !pa.max) posMinMax.push({ mi, s: `${where}：POSITION 缺 min/max`, hard: true });
     else if (pa.min.some((v, j) => Math.abs(v - mn[j]) > 1e-4 * (1 + Math.abs(v))) || pa.max.some((v, j) => Math.abs(v - mx[j]) > 1e-4 * (1 + Math.abs(v))))
       posMinMax.push({ mi, s: `${where}：min/max 与实际数据不符（实际 min ${mn.map(v => v.toFixed(3))}，max ${mx.map(v => v.toFixed(3))}）` });
+    else mmBad = false;
+    if (mmBad && !nan && vc) fixes.minmax.set(at.POSITION, { min: mn.slice(), max: mx.slice() });
     // 索引
     let idx = null;
     if (p.indices != null) {
@@ -501,6 +523,7 @@ async function runChecks(ctx) {
           if (l < 1e-6) zero++; else if (Math.abs(l - 1) > 0.01) { off++; if (Math.abs(l - 1) > Math.abs(worst - 1)) worst = l; }
         }
         if (zero || off) normBad.push({ mi, s: `${where}：${off} 个未归一（最偏 |n|=${worst.toFixed(3)}）${zero ? `，${zero} 个零向量` : ''}`, zero });
+        if (off && json.accessors[at.NORMAL].componentType === 5126 && plainAcc(at.NORMAL)) fixes.normals.add(at.NORMAL);
       }
     }
     // 材质 → 贴图 / UV / 顶点色
@@ -534,8 +557,8 @@ async function runChecks(ctx) {
         for (let k = 0; k < C.count; k++) lum += 0.2126 * C.data[k * C.n] + 0.7152 * C.data[k * C.n + 1] + 0.0722 * C.data[k * C.n + 2];
         lum /= Math.max(C.count, 1);
         const hasBase = !!mat?.pbrMetallicRoughness?.baseColorTexture;
-        if (lum < 0.05) colorBlack.push({ mi, s: `${where}：COLOR_0 平均亮度 ${lum.toFixed(3)}${hasBase ? '，并且材质有 baseColor 贴图' : ''}` });
-        else if (hasBase) colorTint.push({ mi, s: `${where}：COLOR_0 平均亮度 ${lum.toFixed(2)}，材质 ${esc(mat.name || '#' + p.material)} 同时有 baseColor 贴图` });
+        if (lum < 0.05) { colorBlack.push({ mi, s: `${where}：COLOR_0 平均亮度 ${lum.toFixed(3)}${hasBase ? '，并且材质有 baseColor 贴图' : ''}` }); fixes.colorBlack.push([mi, pi]); }
+        else if (hasBase) fixes.colorTint.push([mi, pi]), colorTint.push({ mi, s: `${where}：COLOR_0 平均亮度 ${lum.toFixed(2)}，材质 ${esc(mat.name || '#' + p.material)} 同时有 baseColor 贴图` });
       }
     }
     // 蒙皮
@@ -548,6 +571,7 @@ async function runChecks(ctx) {
           if (Math.abs(s - 1) > 0.01) { off++; if (Math.abs(s - 1) > Math.abs(worst - 1)) worst = s; }
         }
         if (off) weightBad.push({ mi, s: `${where}：${off} 个顶点权重和 ≠ 1（最偏 ${worst.toFixed(3)}）` });
+        if (off && plainAcc(at.WEIGHTS_0)) fixes.weights.add(at.WEIGHTS_0);
         let maxJ = 0; for (const v of J.data) if (v > maxJ) maxJ = v;
         for (const si of meshesWithSkin.get(mi) || []) {
           const nj = json.skins[si]?.joints?.length || 0;
@@ -612,6 +636,8 @@ async function runChecks(ctx) {
       if (!lastRowOk) {
         const looksTransposed = Math.abs(m[12]) < 1e-4 && Math.abs(m[13]) < 1e-4 && Math.abs(m[14]) < 1e-4 && Math.abs(m[15] - 1) < 1e-4;
         const jn = json.nodes?.[s.joints?.[k]]?.name || 'joint#' + k;
+        if (looksTransposed && plainAcc(s.inverseBindMatrices) && json.accessors[s.inverseBindMatrices].componentType === 5126)
+          (fixes.ibm.get(s.inverseBindMatrices) || fixes.ibm.set(s.inverseBindMatrices, new Set()).get(s.inverseBindMatrices)).add(k);
         (looksTransposed ? rowMajor : badRow).push(`<code>${esc(jn)}</code>：[3,7,11]=(${m[3].toFixed(3)}, ${m[7].toFixed(3)}, ${m[11].toFixed(3)})`);
       }
     }
@@ -673,7 +699,141 @@ async function runChecks(ctx) {
   stats.textureBytes = ctx.imageInfo.reduce((s, x) => s + (x.bytes || 0), 0);
   const order = { err: 0, warn: 1, info: 2 };
   issues.sort((a, b) => order[a.level] - order[b.level]);
-  return { issues, passed: [...passed].map(k => RULE_NAMES[k]), stats };
+  fixes.uri = !!ctx.fixes_uri;
+  return { issues, passed: [...passed].map(k => RULE_NAMES[k]), stats, fixes };
+}
+
+
+/* =====================================================================
+ *  3b. 一键修复：只改有确定答案的问题，输出一个新的 GLB
+ * ===================================================================== */
+const FIX_ITEMS = [
+  // key, 标题, 说明, 默认是否勾选
+  ['uri', '删除 GLB 里多余的 buffer uri', '让加载器读包内的数据，不再去外面找 .bin', true],
+  ['f64', '把按 8 字节写入的数据转回 float32', '只处理“声明 FLOAT、实际是 float64”的数据', true],
+  ['ibm', '转置写反的骨骼矩阵', '把行主序的 bindposes 改回 glTF 要求的列主序', true],
+  ['normals', '法线归一化', '把每条法线的长度统一成 1，零向量保持不动', true],
+  ['weights', '蒙皮权重归一化', '每个顶点的权重和调成 1，全零的绑到第一根骨骼', true],
+  ['minmax', '重算 POSITION 的 min / max', '按实际顶点数据重新计算包围盒', true],
+  ['colorBlack', '删除几乎全黑的顶点色', '全黑的 COLOR_0 会把整块模型乘黑', true],
+  ['colorTint', '删除会和贴图相乘的顶点色', '树木、花丛这类靠顶点色上色的模型不要勾', false],
+];
+function fixCount(fx, key) {
+  const v = fx[key];
+  return v == null ? 0 : typeof v === 'boolean' ? +v : v instanceof Map || v instanceof Set ? v.size : v.length;
+}
+function canFix() {
+  const c = state.container;
+  return !!(c && c.isGLB && c.bin && (state.json.buffers || []).length === 1);
+}
+
+function writeAccessor(json, buf, i, values, raw = false) {
+  const a = json.accessors[i], c = COMP[a.componentType], n = NCOMP[a.type];
+  const bv = json.bufferViews[a.bufferView], elem = c.size * n, stride = bv.byteStride || elem;
+  const start = (bv.byteOffset || 0) + (a.byteOffset || 0);
+  const dv = new DataView(buf), set = 'set' + c.get.slice(3);
+  const norm = a.normalized && !raw ? c.norm : 1;
+  for (let k = 0; k < a.count; k++) for (let j = 0; j < n; j++) {
+    let v = values[k * n + j];
+    if (a.componentType !== 5126) v = Math.round(v * norm);
+    dv[set](start + k * stride + j * c.size, v, true);
+  }
+}
+
+function applyFixes(selected) {
+  const json = structuredClone(state.json), fx = state.report.fixes;
+  const chunks = [state.container.bin.slice(0)]; let total = chunks[0].byteLength;
+  const append = (bytes) => { // 4 字节对齐后追加到 BIN 末尾，返回偏移
+    const pad = (4 - total % 4) % 4; if (pad) { chunks.push(new ArrayBuffer(pad)); total += pad; }
+    const off = total; chunks.push(bytes); total += bytes.byteLength; return off;
+  };
+  const done = [];
+  let buf = chunks[0];
+
+  if (selected.has('uri') && fx.uri) { delete json.buffers[0].uri; done.push('删除了 buffer uri'); }
+
+  if (selected.has('f64') && fx.f64.size) {
+    for (const i of fx.f64) {
+      const a = json.accessors[i], bv = json.bufferViews[a.bufferView], n = NCOMP[a.type];
+      const dv = new DataView(buf), o = (bv.byteOffset || 0) + (a.byteOffset || 0);
+      const out = new Float32Array(a.count * n);
+      for (let k = 0; k < out.length; k++) out[k] = dv.getFloat64(o + k * 8, true);
+      const off = append(out.buffer);
+      json.bufferViews.push({ buffer: 0, byteOffset: off, byteLength: out.byteLength, ...(bv.target ? { target: bv.target } : {}) });
+      a.bufferView = json.bufferViews.length - 1; delete a.byteOffset;
+      if (a.min || a.max) {
+        const mn = Array(n).fill(Infinity), mx = Array(n).fill(-Infinity);
+        for (let k = 0; k < a.count; k++) for (let j = 0; j < n; j++) { const v = out[k * n + j]; if (v < mn[j]) mn[j] = v; if (v > mx[j]) mx[j] = v; }
+        a.min = mn; a.max = mx;
+      }
+    }
+    done.push(`${fx.f64.size} 组 float64 数据转回 float32`);
+  }
+  // 后面的修复要在合并后的 buffer 上读写
+  const merged = new Uint8Array(total); let p = 0; for (const c of chunks) { merged.set(new Uint8Array(c), p); p += c.byteLength; }
+  buf = merged.buffer;
+  const R = new AccessorReader(json, [buf]);
+
+  if (selected.has('ibm') && fx.ibm.size) {
+    let cnt = 0;
+    for (const [i, ks] of fx.ibm) {
+      const M = R.read(i); if (!M) continue;
+      const d = M.data.slice();
+      for (const k of ks) { const m = M.data.subarray(k * 16, k * 16 + 16); for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) d[k * 16 + c * 4 + r] = m[r * 4 + c]; cnt++; }
+      writeAccessor(json, buf, i, d);
+    }
+    done.push(`转置了 ${cnt} 个骨骼矩阵`);
+  }
+  if (selected.has('normals') && fx.normals.size) {
+    for (const i of fx.normals) {
+      const N = R.read(i); if (!N) continue; const d = N.data.slice();
+      for (let k = 0; k < N.count; k++) { const l = Math.hypot(d[k * 3], d[k * 3 + 1], d[k * 3 + 2]); if (l > 1e-6) { d[k * 3] /= l; d[k * 3 + 1] /= l; d[k * 3 + 2] /= l; } }
+      writeAccessor(json, buf, i, d);
+    }
+    done.push(`${fx.normals.size} 组法线归一化`);
+  }
+  if (selected.has('weights') && fx.weights.size) {
+    for (const i of fx.weights) {
+      const W = R.read(i); if (!W) continue; const a = json.accessors[i];
+      const isInt = a.componentType !== 5126, full = isInt ? COMP[a.componentType].norm : 1;
+      const d = new Float64Array(W.data.length);
+      for (let k = 0; k < W.count; k++) {
+        const w = Array.from(W.data.subarray(k * 4, k * 4 + 4)).map(v => Math.max(v, 0));
+        const sum = w[0] + w[1] + w[2] + w[3];
+        let q = sum < 1e-8 ? [1, 0, 0, 0] : w.map(v => v / sum);
+        if (isInt) { // 量化后补齐误差，保证整数和正好等于满值
+          q = q.map(v => Math.round(v * full));
+          const diff = full - (q[0] + q[1] + q[2] + q[3]); q[q.indexOf(Math.max(...q))] += diff;
+        }
+        d.set(q, k * 4);
+      }
+      writeAccessor(json, buf, i, d, isInt);
+    }
+    done.push(`${fx.weights.size} 组蒙皮权重归一化`);
+  }
+  if (selected.has('minmax') && fx.minmax.size) {
+    for (const [i, mm] of fx.minmax) { json.accessors[i].min = mm.min.map(Math.fround); json.accessors[i].max = mm.max.map(Math.fround); }
+    done.push(`重算了 ${fx.minmax.size} 组 min / max`);
+  }
+  for (const key of ['colorBlack', 'colorTint']) {
+    if (!selected.has(key) || !fx[key].length) continue;
+    for (const [mi, pi] of fx[key]) delete json.meshes[mi].primitives[pi].attributes.COLOR_0;
+    done.push(`删除了 ${fx[key].length} 处${key === 'colorBlack' ? '全黑的' : '会染色的'}顶点色`);
+  }
+
+  // 重新打包 GLB
+  const binLen = Math.ceil(buf.byteLength / 4) * 4;
+  json.buffers[0].byteLength = binLen;
+  json.asset = { ...json.asset, generator: ((json.asset?.generator || '') + ' · fixed by Bowen GLB 体检台').replace(/^ · /, '') };
+  let js = new TextEncoder().encode(JSON.stringify(json));
+  const jsLen = Math.ceil(js.byteLength / 4) * 4;
+  const out = new Uint8Array(12 + 8 + jsLen + 8 + binLen), dv = new DataView(out.buffer);
+  dv.setUint32(0, GLB_MAGIC, true); dv.setUint32(4, 2, true); dv.setUint32(8, out.byteLength, true);
+  dv.setUint32(12, jsLen, true); dv.setUint32(16, CHUNK_JSON, true);
+  out.fill(0x20, 20, 20 + jsLen); out.set(js, 20);
+  const bo = 20 + jsLen; dv.setUint32(bo, binLen, true); dv.setUint32(bo + 4, CHUNK_BIN, true);
+  out.set(new Uint8Array(buf), bo + 8);
+  return { ab: out.buffer, done };
 }
 
 /* =====================================================================
@@ -876,8 +1036,9 @@ async function loadFiles(fileList) {
   } finally { $('#loading').classList.remove('on'); }
 }
 
-async function loadBuffer(ab, name, size, files = new Map()) {
+async function loadBuffer(ab, name, size, files = new Map(), opts = {}) {
   cleanup();
+  state.fixInfo = opts.fixInfo || null;
   state.fileName = name; state.fileSize = size;
   let container;
   try { container = parseContainer(ab); }
@@ -891,7 +1052,7 @@ async function loadBuffer(ab, name, size, files = new Map()) {
   }));
   const ctx = { json, isGLB: container.isGLB, buffers, files, container, fileSize: size };
   const report = await runChecks(ctx);
-  state.json = json; state.report = report; state.imageInfo = ctx.imageInfo;
+  state.json = json; state.report = report; state.imageInfo = ctx.imageInfo; state.container = container;
 
   // three.js 渲染
   const blobUrls = new Map([...files].map(([k, f]) => [k, URL.createObjectURL(f)]));
@@ -951,7 +1112,9 @@ function renderChecks() {
   const v = e ? ['err', '✕', `${e} 个错误${w ? `、${w} 个警告` : ''}——直接交付大概率会出问题`] : w ? ['warn', '!', `${w} 个警告——能用，但建议过一遍`] : ['ok', '✓', '没有发现问题，可以交付'];
   const S = (k, l) => `<div class="stat"><b>${typeof k === 'number' ? fmtNum(k) : k}</b><span>${l}</span></div>`;
   $('#p-check').innerHTML = `
+    ${fixedBanner()}
     <div class="verdict ${v[0]}"><b>${v[1]}</b><div>${v[2]}</div></div>
+    ${fixBox()}
     <div class="stats">${S(stats.verts, '顶点')}${S(stats.tris, '三角形')}${S(stats.meshes, '网格')}${S(stats.materials, '材质')}${S(stats.images, '贴图')}${S(fmtBytes(stats.textureBytes), '贴图体积')}${S(stats.nodes, '节点')}${S(stats.skins, '蒙皮')}${S(stats.animations, '动画')}</div>
     ${issues.map((it, k) => `
       <details class="issue" ${it.level === 'err' ? 'open' : ''}>
@@ -962,6 +1125,42 @@ function renderChecks() {
       </details>`).join('')}
     ${passed.length ? `<div class="oklist">${passed.map(p => `<div>${esc(p)}</div>`).join('')}</div>` : ''}`;
   $$('[data-go]', $('#p-check')).forEach(b => b.onclick = () => locate(issues[+b.dataset.go]));
+  const fb = $('#btnFix'); if (fb) fb.onclick = runFix;
+  const dl = $('#btnFixDl'); if (dl) dl.onclick = () => { const a = document.createElement('a'); a.href = state.fixInfo.url; a.download = state.fileName; a.click(); };
+}
+
+function fixBox() {
+  const fx = state.report.fixes; if (!fx) return '';
+  const items = FIX_ITEMS.filter(([k]) => fixCount(fx, k));
+  if (!items.length) return '';
+  if (!canFix()) return `<div class="fixbox"><div class="fh"><b>一键修复</b></div><div class="note">有 ${items.length} 类问题可以自动修，但修复目前只支持单个 .glb 文件。先把 .gltf + .bin 导出成 .glb 再拖进来。</div></div>`;
+  return `<div class="fixbox"><div class="fh"><b>一键修复</b><span>只修有确定答案的问题，生成新文件，原文件不动</span></div>
+    ${items.map(([k, t, d, on]) => `<label><input type="checkbox" data-fix="${k}" ${on ? 'checked' : ''}><span>${t}<em>×${fixCount(fx, k)}</em><small>${d}</small></span></label>`).join('')}
+    <div class="acts"><button class="btn primary" id="btnFix">修复并重新体检</button></div></div>`;
+}
+
+function fixedBanner() {
+  const f = state.fixInfo; if (!f) return '';
+  return `<div class="fixed"><b>✓ 已生成修复后的文件</b>
+    <ul>${f.done.map(d => `<li>${esc(d)}</li>`).join('')}</ul>
+    下面是修复后重新体检的结果。索引越界这类没法自动修的问题会继续列出来。
+    <div class="acts"><button class="btn primary" id="btnFixDl">下载 ${esc(state.fileName)}</button></div></div>`;
+}
+
+async function runFix() {
+  const selected = new Set($$('[data-fix]').filter(x => x.checked).map(x => x.dataset.fix));
+  if (!selected.size) { alert('先勾选要修复的项目'); return; }
+  $('#loading').classList.add('on');
+  try {
+    const { ab, done } = applyFixes(selected);
+    if (!done.length) { alert('勾选的项目里没有需要改动的内容'); return; }
+    const name = state.fileName.replace(/(\.fixed)?\.(glb|gltf)$/i, '') + '.fixed.glb';
+    const url = URL.createObjectURL(new Blob([ab], { type: 'model/gltf-binary' }));
+    if (state.fixInfo?.url) URL.revokeObjectURL(state.fixInfo.url);
+    await loadBuffer(ab, name, ab.byteLength, new Map(), { fixInfo: { done, url } });
+    $('.tabs [data-tab="check"]').click(); $('#p-check').scrollTop = 0;
+  } catch (e) { console.error(e); alert('修复失败：' + e.message); }
+  finally { $('#loading').classList.remove('on'); }
 }
 
 function locate(it) {
