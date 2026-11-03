@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://yigenjiao.github.io/Bowen/"><img src="assets/cover.webp" width="100%" alt="BOWEN，按需求做到能用。香蕉猫抱着电脑，投射出一只半实体、半线框的茶壶在做体检。3D 技术美术，模型、道具与场景地编。"></a>
+  <a href="https://yigenjiao.github.io/Bowen/"><img src="assets/cover.webp" width="100%" alt="BOWEN。香蕉猫抱着电脑，投射出一只半实体、半线框的茶壶在做体检。3D 资产还原：从成品包中原样还原模型、贴图、材质与场景。"></a>
 </p>
 
 <p align="center">
@@ -9,15 +9,16 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Blender-建模_%2F_地编-e6480f?style=flat-square" alt="Blender">
-  <img src="https://img.shields.io/badge/Unity-Shader_%2F_交付-c98a2b?style=flat-square" alt="Unity">
+  <img src="https://img.shields.io/badge/Cocos_Creator-3.x-e6480f?style=flat-square" alt="Cocos Creator 3.x">
+  <img src="https://img.shields.io/badge/Luna_%2F_Unity-Playable-c98a2b?style=flat-square" alt="Luna / Unity Playable">
   <img src="https://img.shields.io/badge/glTF-2.0-f0e9dc?style=flat-square&labelColor=14110d" alt="glTF 2.0">
 </p>
 
-我是 **Bowen**，3D 游戏技术美术。根据甲方需求制作**模型、道具和场景地编**，
-也接已有资源的整理、改版，以及溶解、河流、卡通渲染这类 Shader 效果。
+**资产在包里，我帮你原样还原。**
 
-交付标准 GLB 和贴图集，附节点结构表，导进引擎就能用。
+面向只有成品包、缺少源工程的团队：从试玩广告（Playable）、WebGL 网页游戏和项目发布包中，完整还原模型、贴图、材质与场景层级，保留原始命名和空间坐标，输出可以直接导入 Blender / Unity 的标准 GLB。资产怎么复用，由你决定。
+
+> 仅受理具备合法使用权的文件：自有项目，或经权利方授权的素材。
 
 ## 🧰 GLB 体检台：把踩过的坑做成工具
 
@@ -48,16 +49,16 @@
 
 **能修的直接修**：骨骼矩阵写反、float64 落盘、坏三角形、法线没归一、权重和不为 1、缺 min/max、多余的 buffer uri、黑色顶点色，勾选后点“修复并重新体检”，下载修好的新 GLB。索引越界的三角形会被删掉，留下的小洞可以选择自动补（只在找得到唯一答案时补，UV 沿用周围顶点），补不上的会提示你回建模软件手动补；零缩放节点这类可能是故意设计的，只报告、不乱改。另有法线、UV 棋盘格、顶点色、骨骼权重四种检查视图，也可以导出 Markdown 体检报告附在交付里。
 
-## 能直接交付的能力
+## 服务
 
 | | 能力 | 内容 |
 | --- | --- | --- |
-| 01 | **模型与道具** | 按需求制作道具、建筑和场景物件，控制面数与贴图规格，适配目标引擎和平台 |
-| 02 | **场景地编** | 按玩法和参考搭建关卡场景，整理摆位、层级与材质，已有场景也可以改版重做 |
-| 03 | **Shader 效果** | 按参考实现溶解、河流、卡通渲染等效果，参数可调，可以接进 Unity 管线 |
-| 04 | **AI 工作流** | 概念出图、批量素材生成与自动化脚本，把重复劳动交给流水线 |
+| 01 | **资产还原** | 从成品包中完整取出模型、贴图、材质与骨骼，支持 Cocos Creator 3.x、Luna / Unity 等常见 Playable 与 WebGL 打包格式 |
+| 02 | **场景还原** | 按原始节点层级、世界坐标和实例复用关系重建场景，摆放原样保留 |
+| 03 | **交付校验** | 结构校验、引擎内包围盒与 Blender 逐项对账、多视角渲染比对，附验收记录 |
+| 04 | **二次加工（可选）** | 在还原结果上做风格改版、地编调整或 Shader 复刻 |
 
-做过的案例（整场景交付、Shader 效果、主题改版，以及一次交付 3732 个模型的大场景）见[个人主页](https://yigenjiao.github.io/Bowen/#cases)。
+做过的案例（整场景还原、Shader 效果、主题改版，以及从 8MB 单文件包里还原 3732 个模型）见[个人主页](https://yigenjiao.github.io/Bowen/#cases)。
 
 ## 仓库里有什么
 
@@ -71,8 +72,8 @@ assets/                          封面、截图、二维码
 
 ## 联系
 
-模型、道具、场景地编、资源改版和 Shader 效果，都可以直接聊。
-说清楚用途、风格参考和交付格式，我先评估工期。
+手上有拿不出资产的包？发来文件类型、引擎（如果知道）和你想拿到的内容，我先判断能不能还原、需要多久。
+仅受理具备合法使用权的文件：自有项目，或经权利方授权的素材。
 
 - **Email**：shiboxun123@gmail.com
 - **GitHub**：[@yigenjiao](https://github.com/yigenjiao)
