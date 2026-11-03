@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bowen · 快速建资产 / 资产整理 / 场景地编</title>
-<meta name="description" content="Bowen，3D 游戏技术美术。用 AI 流水线加人工把关，几天内帮你建好一套游戏资产；已有的模型和贴图，统一整理成能直接进引擎的资产库。">
+<title>Bowen · 3D 资产还原 / Playable 与 WebGL 成品包</title>
+<meta name="description" content="Bowen，3D 技术美术。从试玩广告、WebGL 网页游戏和项目发布包中还原模型、贴图、材质与场景层级，保留原始命名和坐标，输出可直接导入 Blender / Unity 的 GLB。仅受理具备合法使用权的文件。">
 <link rel="icon" type="image/png" href="assets/favicon.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Bowen · 3D 技术美术">
-<meta property="og:description" content="几天内建好一套游戏资产，命名、比例、材质统一整理，导进引擎就能用。">
+<meta property="og:title" content="Bowen · 资产在包里，我帮你原样还原">
+<meta property="og:description" content="从成品包中还原模型、贴图、材质与场景层级，原始命名和坐标原样保留，导入 Blender / Unity 即可继续使用。">
 <meta property="og:image" content="https://yigenjiao.github.io/Bowen/assets/cover.jpg">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -88,6 +88,7 @@ nav.scrolled{
 .nav-new i{font-style:normal;font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.08em;background:var(--ember);color:#fff;border-radius:3px;padding:1px 5px}
 .nav-tool{display:none;align-items:center;gap:7px;font-family:var(--mono);font-size:12.5px;letter-spacing:.06em;color:#fff;background:var(--ember);border-radius:3px;padding:9px 14px;margin-left:auto}
 .nav-tool i{width:6px;height:6px;border-radius:50%;background:#fff;animation:pulse 2.4s ease-in-out infinite}
+.hero p.hero-legal{font-size:13px;color:var(--faint);margin:-22px 0 30px;padding-left:12px;border-left:2px solid var(--amber)}
 .hero-tool{display:inline-block;margin-top:26px;font-size:13px;color:var(--muted);border-bottom:1px dashed rgba(240,233,220,.25);padding-bottom:2px;transition:color .2s,border-color .2s}
 .hero-tool span{color:var(--ember);font-family:var(--mono);font-size:12px;margin-left:4px}
 .hero-tool:hover{color:var(--text);border-color:var(--ember)}
@@ -334,6 +335,7 @@ footer{border-top:1px solid var(--line);padding:40px 0;margin-top:0}
   <div class="nav-inner">
     <a href="#top" class="brand"><i class="dot"></i>BOWEN</a>
     <div class="nav-links">
+      <a href="#about">适用场景</a>
       <a href="#services">服务</a>
       <a href="#flow">流程</a>
       <a href="#deliver">交付物</a>
@@ -348,17 +350,18 @@ footer{border-top:1px solid var(--line);padding:40px 0;margin-top:0}
   <div class="wrap">
     <div class="hero-grid">
       <div>
-        <div class="tag"><i></i>3D 技术美术 · 十年游戏美术 · 可接活</div>
-        <h1>快速建好资产，<br>再<em>整理干净</em>交给你。</h1>
-        <p>我是 Bowen，做了十年游戏美术。从概念图、模型、道具到场景地编，用 AI 流水线加人工逐个把关，几天内帮你建好一套资产；手上已经有一堆零散的模型和贴图，也能统一命名、比例和材质，整理成导进引擎就能用的资产库。</p>
+        <div class="tag"><i></i>3D 资产还原 · 十年游戏美术 · 可接活</div>
+        <h1>资产在包里，<br>我帮你<em>原样还原</em>。</h1>
+        <p>面向只有成品包、缺少源工程的团队：从试玩广告（Playable）、WebGL 网页游戏和项目发布包中，完整还原模型、贴图、材质与场景层级，保留原始命名和空间坐标，输出可以直接导入 Blender / Unity 的标准 GLB。资产怎么复用，由你决定。</p>
+        <p class="hero-legal">仅受理具备合法使用权的文件：自有项目，或经权利方授权的素材。</p>
         <div class="hero-actions">
-          <a href="#services" class="btn btn-primary">看能帮你做什么</a>
+          <a href="#about" class="btn btn-primary">看适用场景</a>
           <a href="#deliver" class="btn btn-ghost">交付物长什么样</a>
         </div>
-        <a class="hero-tool" href="tools/glb-inspector/">交付前，每个模型都过一遍我自己写的 GLB 体检台 <span>→ 免费试用</span></a>
+        <a class="hero-tool" href="tools/glb-inspector/">每份交付都过一遍我自己写的 GLB 体检台 <span>→ 免费试用</span></a>
       </div>
       <div class="term">
-        <div class="term-bar"><span></span><span></span><span></span><em>asset-library</em></div>
+        <div class="term-bar"><span></span><span></span><span></span><em>asset-restore</em></div>
         <div class="term-body" id="term"></div>
       </div>
     </div>
@@ -368,29 +371,29 @@ footer{border-top:1px solid var(--line);padding:40px 0;margin-top:0}
 <section class="band" id="about">
   <div class="wrap">
     <div class="reveal">
-      <div class="eyebrow">你可能正卡在这</div>
-      <h2>缺的往往不是一个模型，是一整套能直接用的资产。</h2>
-      <p class="lede">项目要上线，美术资产却东一块西一块。我做的就是中间这段：把要的资产快速建出来，把手上的资产理清楚，交给你的时候已经能直接放进项目。</p>
+      <div class="eyebrow">适用场景</div>
+      <h2>源工程找不到了，资产其实还在包里。</h2>
+      <p class="lede">很多团队手里只剩打包后的成品：外包只交付了发布包、旧项目的工程已经遗失、要换引擎或做续作。资产并没有消失，只是被压缩、编码、内联封装在包里，常规解包工具打不开。</p>
     </div>
     <div class="compare reveal">
       <div class="cmp">
         <h3>常见情况</h3>
         <ul>
-          <li>资产来源杂：外包、素材站、AI 生成的混在一起</li>
-          <li>命名乱、比例不一、材质重复，找一个模型要翻半天</li>
-          <li>导进引擎才发现发黑、缺贴图、骨骼散架</li>
-          <li>要得急，一个人从零建一套场景要好几周</li>
-          <li>结论：时间都花在返工和找东西上</li>
+          <li>外包只交付了成品包，源工程不在手上</li>
+          <li>旧项目工程遗失，只剩线上运行的版本</li>
+          <li>要换引擎、做续作或改版，资产拿不出来</li>
+          <li>常规解包工具打不开：压缩、编码、内联打包</li>
+          <li>结论：只能对着截图从头重建</li>
         </ul>
       </div>
       <div class="cmp on">
         <h3>交给我之后</h3>
         <ul>
-          <li>按需求和参考图定好风格、面数与贴图规格</li>
-          <li>AI 流水线出图出模，每一个都由我把关修整</li>
-          <li>命名、比例、原点、材质统一，整理成资产库</li>
-          <li>交付前逐个过体检台，附资产清单和规范说明</li>
-          <li>结论：几天拿到一套能直接进项目的资产</li>
+          <li>识别引擎、版本与打包方式，选对解码路径</li>
+          <li>还原网格、UV、骨骼，贴图转为标准图片并绑定材质</li>
+          <li>场景层级、世界坐标与原始命名原样保留</li>
+          <li>交付前做包围盒对账与多视角渲染比对</li>
+          <li>结论：拿到可直接导入 Blender / Unity 的原始资产</li>
         </ul>
       </div>
     </div>
@@ -401,33 +404,33 @@ footer{border-top:1px solid var(--line);padding:40px 0;margin-top:0}
   <div class="wrap">
     <div class="reveal">
       <div class="eyebrow">服务</div>
-      <h2>四件我能直接帮你做的事</h2>
-      <p class="lede">可以只做其中一件，也可以从概念到交付整条包下来。</p>
+      <h2>从拆包到交付，四个环节</h2>
+      <p class="lede">核心是还原；需要的话，也可以在还原结果上继续改版加工。</p>
     </div>
     <div class="grid-4 reveal">
       <div class="card">
         <div class="idx">01</div>
-        <h3>快速建资产</h3>
-        <p>从概念图到带贴图的模型：AI 出初稿，我逐个把关、修整到能用。道具、建筑、场景物件，一套场景几天出齐。</p>
-        <div class="tags"><b>AI 出图出模</b><b>人工把关</b><b>面数可控</b></div>
+        <h3>资产还原</h3>
+        <p>从成品包中完整取出模型、贴图、材质与骨骼。支持 Cocos Creator 3.x、Luna / Unity 等常见 Playable 与 WebGL 打包格式。</p>
+        <div class="tags"><b>Cocos 3.x</b><b>Luna / Unity</b><b>WebGL</b></div>
       </div>
       <div class="card">
         <div class="idx">02</div>
-        <h3>资产整理</h3>
-        <p>手上已有的一堆模型和贴图，统一命名、比例、原点、材质和格式，去重合并，整理成按类别能找、能直接用的资产库。</p>
-        <div class="tags"><b>命名规范</b><b>去重合并</b><b>资产清单</b></div>
+        <h3>场景还原</h3>
+        <p>按原始节点层级、世界坐标和实例复用关系重建场景，摆放原样保留，可以直接在此基础上做地编调整。</p>
+        <div class="tags"><b>节点层级</b><b>世界坐标</b><b>实例复用</b></div>
       </div>
       <div class="card">
         <div class="idx">03</div>
-        <h3>场景地编</h3>
-        <p>按玩法和参考图摆放模型和道具，整理层级与材质复用；已有场景也可以换风格改版。</p>
-        <div class="tags"><b>地编</b><b>关卡场景</b><b>改版</b></div>
+        <h3>交付校验</h3>
+        <p>结构校验、引擎内包围盒与 Blender 逐项对账、多视角渲染比对，每份交付附验收记录。</p>
+        <div class="tags"><b>包围盒对账</b><b>结构校验</b><b>GLB 体检</b></div>
       </div>
       <div class="card">
         <div class="idx">04</div>
-        <h3>Shader 与效果</h3>
-        <p>按参考实现溶解、河流、卡通渲染等效果，参数可调，可以接进 Unity 管线。</p>
-        <div class="tags"><b>Shader</b><b>特效</b><b>Unity</b></div>
+        <h3>二次加工（可选）</h3>
+        <p>在还原出的资产上做风格改版、地编调整，或按原效果复刻 Shader，接进你的 Unity 管线。</p>
+        <div class="tags"><b>改版</b><b>地编</b><b>Shader</b></div>
       </div>
     </div>
   </div>
@@ -437,7 +440,7 @@ footer{border-top:1px solid var(--line);padding:40px 0;margin-top:0}
   <div class="wrap">
     <div class="reveal">
       <div class="eyebrow">流程</div>
-      <h2>六步，从需求到一套能用的资产</h2>
+      <h2>六步，从成品包到可用资产</h2>
       <p class="lede">点左边任意一步，看这一步具体在做什么。</p>
     </div>
     <div class="steps reveal">
@@ -451,32 +454,29 @@ footer{border-top:1px solid var(--line);padding:40px 0;margin-top:0}
   <div class="wrap">
     <div class="reveal">
       <div class="eyebrow">交付物</div>
-      <h2>你最后拿到的，是一个整理好的资产库</h2>
-      <p class="lede">不是一堆散文件。按类别分好、命名统一、每个资产都有记录，新同事打开也能马上找到要用的东西。</p>
+      <h2>你拿到的，是和原包一一对应的资产</h2>
+      <p class="lede">原始命名、层级和坐标全部保留，每一项都能在原包里找到对应；交付时附验收记录，证明“导对了”，而不只是“导出来了”。</p>
     </div>
     <div class="deliver reveal">
       <ul>
-        <li><b>资产库文件夹</b>角色、道具、环境、贴图分开放，统一命名规则，比如 <code>prop_slipper_01</code></li>
-        <li><b>资产清单</b>每个资产的名称、用途、面数、贴图尺寸和预览图，一张表查到底</li>
-        <li><b>引擎就绪的模型</b>GLB / FBX，比例、原点、朝向统一，每个都过一遍体检台</li>
-        <li><b>规范说明</b>命名规则、面数与贴图标准、已知限制，后面加资产照着做就行</li>
+        <li><b>场景 GLB</b>原始节点层级与世界坐标，贴图已内嵌，直接导入 Blender / Unity</li>
+        <li><b>贴图集</b>标准 PNG / JPEG，按原始资源名命名，已与材质绑定</li>
+        <li><b>节点结构表</b>每个节点的名称、路径、坐标，以及引用的模型和材质</li>
+        <li><b>验收记录</b>包围盒对账数据、多视角渲染比对图、已知限制说明</li>
       </ul>
-      <pre class="tree"><span class="c"># 示例：原创小游戏《失眠》的卧室场景</span>
-delivery/
-├─ characters/
-│   └─ banana_cat.glb
-├─ props/
-│   ├─ prop_slipper_01.glb
-│   ├─ prop_book_01.glb
-│   └─ prop_clothes_pile_01.glb
-├─ environment/
-│   ├─ env_bed_01.glb
-│   └─ env_window_curtain_01.glb
+      <pre class="tree"><span class="c"># 交付目录示例</span>
+restore_delivery/
+├─ scene_textured.glb   <span class="c">场景（含贴图）</span>
+├─ scene.obj            <span class="c">兜底格式</span>
 ├─ textures/
-│   ├─ floor_wood_tile_1k.png
-│   └─ wallpaper_faded_tile_1k.png
-├─ assets.csv      <span class="c">资产清单</span>
-└─ README.md       <span class="c">规范与说明</span></pre>
+│   ├─ tex_ground_01.png
+│   ├─ tex_props_atlas.jpg
+│   └─ …                <span class="c">按原始资源名</span>
+├─ nodes.csv            <span class="c">节点结构表</span>
+├─ report/
+│   ├─ aabb_check.txt   <span class="c">包围盒对账</span>
+│   └─ renders/         <span class="c">多视角比对图</span>
+└─ README.md            <span class="c">限制与说明</span></pre>
     </div>
   </div>
 </section>
@@ -486,13 +486,13 @@ delivery/
     <div class="reveal">
       <div class="eyebrow">案例</div>
       <h2>做过的事</h2>
-      <p class="lede">几类典型任务，从场景交付到效果实现。</p>
+      <p class="lede">几类典型任务，从整场景还原到效果复刻与改版。</p>
     </div>
     <div class="grid-3 reveal">
       <div class="case">
-        <div class="k">CASE 01 · 整场景交付</div>
-        <h3>一整套场景资产的整理与交付</h3>
-        <p>按项目需求整理整套场景的模型、贴图、材质与节点层级，统一命名和规格，交付可供美术验证、可直接二次开发的标准资源。</p>
+        <div class="k">CASE 01 · 整场景还原</div>
+        <h3>成品包里的整套场景，原样还原</h3>
+        <p>解码资源映射、还原内嵌贴图，完整取出场景节点树、模型与材质，保留原始命名与坐标，交付可供美术验证、可直接二次开发的标准资源。</p>
         <div class="res">输出：GLB + 贴图集 + 节点结构表</div>
       </div>
       <div class="case">
@@ -508,9 +508,9 @@ delivery/
         <div class="res">输出：替换资产包 + 出图工作流</div>
       </div>
       <div class="case">
-        <div class="k">CASE 04 · 大场景交付</div>
-        <h3>一次交付 3732 个模型的大场景</h3>
-      <p>3776 个节点，3732 个模型、1187 个实例、29 个材质，整体压到 2.3MB 的 GLB。验收时引擎里的世界包围盒和 Blender 逐项对账一致，多视角渲染检查通过。</p>
+        <div class="k">CASE 04 · 单文件包实测</div>
+        <h3>8MB 单文件包，还原 3732 个模型</h3>
+      <p>3776 个场景节点，还原 3732 个模型、1187 个去重实例、29 个材质，交付 2.3MB GLB。引擎内世界包围盒与 Blender 逐项对账一致，多视角渲染检查通过，全程约 1 小时。</p>
         <div class="res">输出：GLB + 贴图集 + 节点结构表</div>
       </div>
     </div>
@@ -552,8 +552,8 @@ delivery/
     <div class="contact reveal">
       <div>
         <div class="eyebrow">联系</div>
-        <h2>要一套资产，或者要把现有资产理清楚？</h2>
-        <p>说清楚用途、风格参考、大概数量和交付格式，或者直接把现有资产的情况发给我，我先给你估工期。</p>
+        <h2>手上有拿不出资产的包？</h2>
+        <p>发来文件类型、引擎（如果知道）和你想拿到的内容，我先判断能不能还原、需要多久。仅受理具备合法使用权的文件：自有项目，或经权利方授权的素材。</p>
       </div>
       <div class="ways">
         <a class="way" href="https://github.com/yigenjiao" target="_blank" rel="noopener"><span>GITHUB</span><b>github.com/yigenjiao</b></a>
@@ -605,12 +605,12 @@ delivery/
   });
 
   var lines = [
-    {t:'$ build --brief 卧室场景 --style keyart.webp', c:'c-dim'},
-    {t:'✓ 概念图 · 已按风格选定', c:'c-ok'},
-    {t:'✓ 模型 · 面数与贴图规格达标', c:'c-ok'},
-    {t:'✓ 命名 / 比例 / 材质 · 已统一', c:'c-ok'},
-    {t:'✓ 资产清单 assets.csv · 已生成', c:'c-ok'},
-    {t:'✓ 体检 0 错误 · 可交付', c:'c-ok'},
+    {t:'$ restore ./build/index.html', c:'c-dim'},
+    {t:'✓ 包型识别 · Cocos Creator 3.x', c:'c-ok'},
+    {t:'✓ 模型 / 贴图 / 材质 · 已还原', c:'c-ok'},
+    {t:'✓ 场景层级与坐标 · 原样保留', c:'c-ok'},
+    {t:'✓ 包围盒对账 · 一致', c:'c-ok'},
+    {t:'✓ 导出 scene.glb · 可交付', c:'c-ok'},
     {t:'$ _', c:'c-key'}
   ];
   var box = document.getElementById('term');
@@ -634,12 +634,12 @@ delivery/
   tick();
 
   var STEPS = [
-    {n:'01', name:'需求确认', desc:'确认用途、风格参考、目标引擎和平台，定好面数与贴图规格，避免做完再返工。', code:'# 风格参考 / 面数 / 贴图规格\n# 目标引擎与平台'},
-    {n:'02', name:'白模搭建', desc:'先出体块和场景布局，确认比例、视角和摆位，甲方确认后再进细化。', code:'# 体块 → 布局 → 确认'},
-    {n:'03', name:'出图出模', desc:'AI 按定好的风格批量出概念图和模型初稿，我逐个挑选、修整，按规格控制面数和贴图尺寸；已有资产就在这一步统一整理。', code:'# 概念图 → 图生 3D → 人工修整\n# 或：已有资产 → 统一规范'},
-    {n:'04', name:'场景地编', desc:'按玩法和参考摆放模型与道具，整理节点层级、命名和材质复用。', code:'# 摆位 / 层级 / 命名 / 材质复用'},
-    {n:'05', name:'导出交付', desc:'导出标准 GLB 与贴图集，附节点结构表，直接进项目或 Unity 工程。', code:'$ export --scene scene.glb\n✓ GLB + 贴图集 + 节点结构表'},
-    {n:'06', name:'对照校验', desc:'导进目标引擎逐项检查摆位、贴图绑定和 UV，再用 GLB 体检台跑一遍，发现问题当场修。', code:'✓ 摆位一致\n✓ 贴图绑定正确\n✓ UV 无丢失'}
+    {n:'01', name:'确认文件与权属', desc:'确认文件来源与使用权，识别引擎、版本和打包方式，判断能否还原、需要多久。', code:'# 权属确认\n# 引擎 / 版本 / 打包方式识别'},
+    {n:'02', name:'解包还原', desc:'按包型逐层解压、解码，取出资源清单与原始二进制数据。', code:'# 解压 → 解码 → 资源清单'},
+    {n:'03', name:'模型与贴图', desc:'还原网格、UV 和骨骼，贴图转为标准图片并重新绑定材质。', code:'# 网格 / UV / 骨骼\n# 贴图 → PNG / JPEG，材质绑定'},
+    {n:'04', name:'场景重建', desc:'按原始节点层级与世界坐标重建场景，保留原始命名与实例复用关系。', code:'# 层级 / 坐标 / 命名 / 实例'},
+    {n:'05', name:'导出交付', desc:'导出标准 GLB 与贴图集，附节点结构表，可直接导入 Blender / Unity。', code:'$ export --scene scene.glb\n✓ GLB + 贴图集 + 节点结构表'},
+    {n:'06', name:'对照校验', desc:'引擎内包围盒与导出结果逐项对账，多视角渲染比对，再过一遍 GLB 体检台。', code:'✓ 包围盒一致\n✓ 贴图绑定正确\n✓ 体检 0 错误'}
   ];
   var list = document.getElementById('stepList');
   var panel = document.getElementById('stepPanel');
