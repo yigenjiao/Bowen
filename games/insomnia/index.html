@@ -113,7 +113,7 @@ function buildRoom() {
   for (let i = 0; i < 6; i++) { const s = new THREE.Mesh(new THREE.SphereGeometry(1.6 + (i % 2) * 0.6, 16, 12), blanket); s.scale.set(1.3, 0.55, 2.2); s.position.set(6.5 + i * 1.8, 4.1, -3.5); s.castShadow = true; scene.add(s); }
   box(0.6, 7, 7.4, bedM, 4.7, 3.5, -3.5);                      // 床头板
   // 床头柜 + 小夜灯
-  box(3, 3.2, 3, gray(0x51473d), 2, 1.6, -5.5);
+  LEVEL.nightstand = box(3, 3.2, 3, gray(0x51473d), 2, 1.6, -5.5);
   box(0.5, 0.9, 0.5, gray(0xf3c27a), 2.2, 3.65, -5.2);
   // 拖鞋（可躲）
   const slip = gray(0x8a6a8f);
@@ -128,7 +128,7 @@ function buildRoom() {
   for (let i = 0; i < 5; i++) { const s = new THREE.Mesh(new THREE.SphereGeometry(1.2, 14, 10), gray(cl[i % 3], 1)); s.scale.set(1.2, 0.85, 1); s.position.set(32.8 + i * 0.7, 1.15 + (i % 2) * 0.3, -0.1); s.castShadow = true; scene.add(s); LEVEL.hides[3].props.push(s); }
   // 杂物（不能躲，纯氛围）
   box(1.2, 0.08, 2.2, gray(0x111318), 24.5, 0.04, 0.6).material.emissive = new THREE.Color(0x1d2a55); // 掉在地上的手机
-  box(3, 9, 2, gray(0x40475a), 30, 4.5, -7);                    // 衣柜
+  LEVEL.dresser = box(3, 9, 2, gray(0x40475a), 30, 4.5, -7);     // 衣柜
   // 窗与窗帘（终点）
   box(0.4, 10, 6, gray(0x2b3248), 43.5, 7, -5);
   LEVEL.curtain = [box(1.2, 14, 1, gray(0x5a4f7a, 1), 42, 7, -1.5), box(1.2, 14, 1, gray(0x5a4f7a, 1), 42, 7, -6.5)];
@@ -185,6 +185,24 @@ new GLTFLoader().loadAsync('models/banana-cat.glb').then(g => {
   cat.add(wrap); cat.userData.body = wrap; cat.userData.baseY = 0; cat.userData.model = m;
   window.__rig = { rig, POSE, poseBone, THREE, cat };
 }).catch(e => console.warn('香蕉猫模型加载失败，继续用占位胶囊', e));
+
+/* ---- 本地测试模型：放在 models/local/（.gitignore 忽略，不进公开仓库）。找不到就继续用方块 ---- */
+function loadProp(name, height, place, replace) {
+  return new GLTFLoader().loadAsync('models/local/' + name + '.glb').then(g => {
+    const m = g.scene, b = new THREE.Box3().setFromObject(m), size = b.getSize(new THREE.Vector3());
+    const k = height / (size.y || 1); m.scale.multiplyScalar(k);
+    const wrap = new THREE.Group(); wrap.add(m);
+    m.position.set(-(b.min.x + b.max.x) / 2 * k, -b.min.y * k, -(b.min.z + b.max.z) / 2 * k); // 底面中心对齐原点
+    m.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; } });
+    place(wrap); scene.add(wrap);
+    if (replace) replace.visible = false;
+    return wrap;
+  }).catch(() => null);
+}
+loadProp('cabinet', 6.5, w => { w.position.set(30, 0, -6.4); }, LEVEL.dresser);
+loadProp('clock', 1.3, w => { w.position.set(1.2, 3.2, -5.0); w.rotation.y = 0.35; });
+let hand = null; // 影子手：车灯扫过时从地板下伸出来，跟着光斑走
+loadProp('shadow-hand', 2.4, w => { w.position.set(0, -3, -2.2); w.visible = false; w.traverse(o => { if (o.isMesh) o.material.color.setScalar(0.45); }); }).then(w => { hand = w; window.__hand = w; });
 
 const catGlow = new THREE.PointLight(0xfff0c8, 1.2, 3.2, 0); catGlow.position.set(0, 1.4, 1.2); cat.add(catGlow); // 保证玩家看得见自己
 
@@ -287,6 +305,14 @@ function step(dt) {
   beam.target.position.set(B.x, 0, 0);
   cone.position.copy(beam.position); cone.lookAt(B.x, 0, 0); cone.material.opacity = sweeping ? 0.11 : 0;
   spot.position.x = B.x; spot.material.opacity = sweeping ? 0.3 : 0;
+  if (hand) { // 预警时在窗边冒头，扫的时候贴着光斑追过来
+    const up = sweeping ? 1 : warn ? 0.5 : 0;
+    hand.userData.up = (hand.userData.up || 0) + (up - (hand.userData.up || 0)) * Math.min(1, dt * 4);
+    hand.visible = hand.userData.up > 0.02;
+    hand.position.x = sweeping ? B.x - B.dir * 1.2 : 40;
+    hand.position.y = -2.4 + hand.userData.up * 2.4 + Math.sin(G.t * 7) * 0.05 * hand.userData.up;
+    hand.rotation.z = Math.sin(G.t * 3) * 0.08;
+  }
   for (const c of LEVEL.curtain) c.material.emissive = new THREE.Color(warn ? 0x5a6ea8 : sweeping ? 0x2a3560 : 0x000000);
   for (const h of LEVEL.hides) for (const p of (h.props || [])) p.material.opacity = (G.hideName === h.name) ? 0.35 : 1;
   cat.position.set(G.x, 0, 0);
