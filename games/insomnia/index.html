@@ -205,7 +205,7 @@ loadProp('clock', 1.3, w => { w.position.set(1.2, 3.2, -5.0); w.rotation.y = Mat
 let hand = null; // 影子手：车灯扫过时从地板下伸出来，跟着光斑走
 loadProp('shadow-hand', 2.4, w => { w.position.set(0, -3, -2.2); w.visible = false; w.traverse(o => { if (o.isMesh) o.material.color.setScalar(0.45); }); }).then(w => { hand = w; window.__hand = w; });
 
-const catGlow = new THREE.PointLight(0xfff0c8, 1.2, 3.2, 0); catGlow.position.set(0, 1.4, 1.2); cat.add(catGlow); // 保证玩家看得见自己
+const catGlow = new THREE.PointLight(0xfff0c8, 0.6, 3.2, 0); catGlow.position.set(0, 1.4, 1.2); cat.add(catGlow); // 保证玩家看得见自己
 
 /* ================= 车灯 ================= */
 const beam = new THREE.SpotLight(0xcfe0ff, 0, 70, 0.3, 0.45, 0);
@@ -333,6 +333,8 @@ function step(dt) {
     poseBone('head', P.headDown, (G.hidden ? 0.35 : 0) + idle * 0.03);
   }
   cat.scale.y = G.hidden ? 0.82 : 1; // 躲着时缩一点
+  // 跟身灯不投影，一直亮着会让香蕉猫在床底、阴影里也发亮。躲起来时熄掉，开阔处留一点轮廓光
+  catGlow.intensity += ((G.hidden ? 0 : 0.6) - catGlow.intensity) * Math.min(1, dt * 5);
   cat.visible = !(G.stun > 0 && Math.floor(G.stun * 10) % 2 === 0);
   camX += (G.x + (innerWidth < innerHeight ? 0.8 : 3) - camX) * Math.min(1, dt * 3);
   camera.position.set(camX, 3.2, 13.5); camera.lookAt(camX, 2.2, -2);
