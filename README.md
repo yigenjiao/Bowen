@@ -4,7 +4,7 @@
 
 <p align="center">
   <strong><a href="https://yigenjiao.github.io/Bowen/">个人主页</a></strong> &nbsp;·&nbsp;
-  <strong><a href="https://yigenjiao.github.io/Bowen/tools/glb-inspector/">GLB 体检台</a></strong> &nbsp;·&nbsp;
+  <strong><a href="https://yigenjiao.github.io/glb-doctor/">GLB 体检台</a></strong> &nbsp;·&nbsp;
   <a href="#联系">联系我</a>
 </p>
 
@@ -23,12 +23,12 @@
 ## 🧰 GLB 体检台：把踩过的坑做成工具
 
 <p align="center">
-  <a href="https://yigenjiao.github.io/Bowen/tools/glb-inspector/?sample=broken.glb"><img src="assets/inspector.webp" width="100%" alt="GLB 体检台界面：左侧列出错误和修复建议，右侧 3D 视口切到顶点色视图，定位到 COLOR_0 全黑的网格"></a>
+  <a href="https://yigenjiao.github.io/glb-doctor/?sample=broken.glb"><img src="assets/inspector.webp" width="100%" alt="GLB 体检台界面：左侧列出错误和修复建议，右侧 3D 视口切到顶点色视图，定位到 COLOR_0 全黑的网格"></a>
 </p>
 
 <p align="center">
-  <strong><a href="https://yigenjiao.github.io/Bowen/tools/glb-inspector/">打开体检台 →</a></strong> &nbsp;·&nbsp;
-  <a href="https://yigenjiao.github.io/Bowen/tools/glb-inspector/?sample=broken.glb">看它怎么抓一个坏样本</a>
+  <strong><a href="https://yigenjiao.github.io/glb-doctor/">打开体检台 →</a></strong> &nbsp;·&nbsp;
+  <a href="https://yigenjiao.github.io/glb-doctor/?sample=broken.glb">看它怎么抓一个坏样本</a>
 </p>
 
 把 `.glb` 拖进浏览器，几秒内告诉你**这个模型交付出去会不会出事**。全部在本地运行，文件不会上传。
@@ -64,8 +64,7 @@
 
 ```
 index.html                       个人主页
-tools/glb-inspector/             GLB 体检台（单文件，无需构建）
-  samples/                       健康样本 / 故意埋坑的样本 + 生成脚本
+tools/glb-inspector/             旧地址，自动跳转到独立仓库 yigenjiao/glb-doctor
 assets/                          封面、截图、二维码
 .github/cover/                   README 封面的源文件（HTML + three.js），可以重新生成
 ```

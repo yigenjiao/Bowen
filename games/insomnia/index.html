@@ -58,11 +58,8 @@ html,body{height:100%;background:var(--night);color:var(--ink);font-family:"Noto
   <button id="again">再来一次</button>
 </div></div>
 
-<script type="importmap">
-{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js" } }
-</script>
 <script type="module">
-import * as THREE from 'three';
+import * as THREE from './vendor/three.module.min.js'; // 内置 three.js r169，不依赖 CDN
 
 /* ================= 关卡数据（单位：香蕉猫约 1 高） ================= */
 const LEVEL = {
