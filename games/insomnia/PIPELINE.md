@@ -150,7 +150,7 @@ A single fluffy plush house slipper, beige fleece with soft pile texture, thick 
 ## 第 4 步：清理和体检
 
 1. 在 Blender 里导入 `.glb`，用 Claude 提供的脚本一键处理：统一尺寸、原点放到底部中心、正面朝前、按需减面，再导出 `.glb`。
-2. 拖进 **GLB 体检台**（https://yigenjiao.github.io/Bowen/tools/glb-inspector/ ）体检，有问题就一键修复。
+2. 拖进 **GLB 体检台**（https://yigenjiao.github.io/glb-doctor/ ）体检，有问题就一键修复。
 3. 把文件放进 `games/insomnia/models/`，文件名用英文（比如 `slipper.glb`）。
 
 **验收**：体检台没有红色错误；面数在上限以内。
