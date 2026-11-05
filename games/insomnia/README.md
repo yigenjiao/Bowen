@@ -10,6 +10,7 @@
 | --- | --- |
 | `index.html` | 游戏本体 |
 | `models/banana-cat.glb` | 香蕉猫模型 |
+| `models/shadow-hand.glb` | 影子手模型（混元 3D 生成，游戏里用透明影子 shader 渲染） |
 | `models/local/` | 本地测试用的模型，不上传仓库（已在 `.gitignore` 里忽略） |
 | `vendor/` | 内置的 three.js 和模型加载器 |
 | `concept/keyart.webp` | 定调图 |
