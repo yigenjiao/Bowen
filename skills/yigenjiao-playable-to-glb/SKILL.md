@@ -656,6 +656,33 @@ re.compile(r'"([^"]*Components\.MeshRenderer[^"]*)":\{([^{}]*)\}')
 GLB 2.03 MB / 372,539 三角面；27 个 `enabled=0` 的 MeshRenderer 要跳过；本 build 无描边第二 pass。
 
 
+#### 12.11 「场景里有、导出没有」= 运行时实例化的 prefab（2026-11-06 实战）
+
+游戏画面上有披萨/产品/钱，导出的 GLB 里没有 —— 不是解包漏了，而是这些东西**加载时不在场景树里**：
+`scene.objects` 只有已经摆好的关卡物件，产品是生产线运行时 `Instantiate(prefab)` 出来的。
+
+**一眼定位漏件的方法**（比对着截图找快得多）：
+
+```python
+# bundle 里所有 mesh id − 场景里被 MeshFilter/SMR/PSR 引用过的 mesh id = 漏件候选
+unref = set(mesh_ids) - used_ids        # 本例剩下 PiSa / PiSa_HeZi / pingzi / zhikezi / Tp_Prop_qian
+```
+
+剩下的这 5 个正好是 `Product`（披萨+披萨盒）、`Product2`（瓶子+纸盒）、`Money`（钞票）三个 prefab 的内容。
+`bundle['prefabs']` 数组里每个 prefab 都是 `{id, path, components, children, data}` 的完整子树，
+**且自带 `Transform`(2) 组件**（position 0-2 / scale 3-5 / rotation 6-9），不需要场景的 transform 池。
+
+**导出做法**：加一个根节点 `_Prefabs (runtime-instantiated)`，把带 mesh 的 prefab 摆到场景外侧一排：
+
+1. 每个 prefab 递归建节点，TRS 直接取 `Transform(2)`，用和其他节点同一套 `cpos()/cq()` 换算；
+2. 量 bbox 时**先把根节点的平移归零**（否则算出的 bbox 带着 prefab 自身的原始位置，排布偏移会错到几百米外）；
+3. 按 bbox 落地：`root.t = [cursor - bmin.x, -bmin.y + 0.01, Z - (bmin.z+bmax.z)/2]`，`cursor += 宽 + 间距`；
+4. 没有 mesh 的 prefab（纯脚本 / 纯 FX，如风雪、PlayerUp、ItemBuy）直接整棵丢弃，别在场景里留空节点；
+5. 节点名保留 prefab 内路径（`Product/PiSai/披萨`），Blender 里一眼能对上。
+
+本例结果：12 个 prefab → 7 个有 mesh，GLB 从 2.03 MB → 2.18 MB，节点 +31，材质 +5，图 +4。
+**注意**：这种"补件"要写进交付说明，明确它是放在场景外的陈列排，不是关卡里真实摆位。
+
 ## Cocos Creator 3.x 包补充流程
 
 部分 DataEye  playable 使用 Cocos Creator 3.8.5+，资源以 assetmap 形式打包（非 Luna 私有格式）。处理流程如下：
