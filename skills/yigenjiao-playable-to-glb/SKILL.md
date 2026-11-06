@@ -683,6 +683,37 @@ unref = set(mesh_ids) - used_ids        # 本例剩下 PiSa / PiSa_HeZi / pingzi
 本例结果：12 个 prefab → 7 个有 mesh，GLB 从 2.03 MB → 2.18 MB，节点 +31，材质 +5，图 +4。
 **注意**：这种"补件"要写进交付说明，明确它是放在场景外的陈列排，不是关卡里真实摆位。
 
+#### 12.12 Z 镜像必须同时反转绕序，否则 Unity 里"模型是反的"（2026-11-06 实战）
+
+Unity 左手 → glTF 右手做的是 `z → -z`，**这是镜像，几何手性翻了**，三角面绕序必须跟着反转。
+不反转的表现：面法线朝里，Unity / UE 默认背面剔除 → 只看得见内壁，用户描述就是"模型都是反的"。
+
+**为什么自查时看不出来**：three.js 脚手架如果写了 `material.side = THREE.DoubleSide`，双面都画，
+反了也照样出图。**预览脚手架一律用 `THREE.FrontSide`**，出现空洞才是绕序错了。
+
+**逐 primitive 表决，不要一把梭全局翻转**：源数据里个别 mesh（本例洗衣机内部件）
+绕序本来就和法线相反，Unity 不剔除时看不出来；全局翻转会把它翻坏。
+
+```python
+idx = np.asarray(prim['indices']).reshape(-1, 3)
+fn  = np.cross(P[idx[:,1]] - P[idx[:,0]], P[idx[:,2]] - P[idx[:,0]])
+vn  = (N[idx[:,0]] + N[idx[:,1]] + N[idx[:,2]]) / 3.0
+if int((np.einsum('ij,ij->i', fn, vn) < 0).sum()) > int((np.einsum('ij,ij->i', fn, vn) > 0).sum()):
+    idx = idx[:, ::-1]
+```
+
+量化验收（一定要跑）：
+
+```
+wind_check.py  →  面法线与顶点法线同向的比例
+修复前 8.96%（几乎全反）  →  修复后 94.57%（剩 5% 是源数据混绕序的内部件）
+```
+
+**顺带一条：Blender → Unity 还会再翻一次。** glTF 右手 Y-up、Blender 右手 Z-up、Unity 左手 Y-up，
+每跳一次轴转换；FBX 导出里 `Forward / Up` 和 Unity 期望不一致就会多转 180°（人朝后）。
+最稳是**跳过 Blender**，Unity 装 glTFast / UnityGLTF 直接吃 `.glb`；必须过 Blender 就设
+`Forward = -Z Forward`、`Up = Y Up`、`Apply Scalings = FBX All`（顺便消掉 0.01 缩放）。
+
 ## Cocos Creator 3.x 包补充流程
 
 部分 DataEye  playable 使用 Cocos Creator 3.8.5+，资源以 assetmap 形式打包（非 Luna 私有格式）。处理流程如下：
