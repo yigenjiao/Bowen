@@ -610,6 +610,52 @@ Material   {name:0, shader:1, renderQueue:3, floatParameters:5, colorParameters:
 - UV 保真度用「按 UV 裁 atlas 区域」反向验：把 `SM_ZSJ_qiang001` 的 UV0 `(0,0.635)–(0.375,0.995)` 从 `51722` 那张 1024 分区 atlas 上裁出来，应该正好是「木框 + 麻点灰墙板 + 木踢脚线」。裁出来对得上，就说明 UV 与贴图绑定没错，渲染发白只是灯光过曝。
 - 渲染脚手架默认光太亮会把整片墙照成白的（本例 `Ambient 1.8 + dir 2.2`），调到 `ambient 1.25(暖) + dir 1.35 + dir2 0.55` 才和原游戏接近。
 
+#### 12.10 每个 build 的组件类型号都会变（2026-11-06 人体弹弓实战，项目 H）
+
+同引擎、不同 build，**类型编号整体漂移**；字段位置一般不变，但必须现场抽表：
+
+| 组件 | 2026-10-30 build | 2026-11-06 build |
+|---|---|---|
+| MeshRenderer | 8 | **5** |
+| MeshFilter | 6 | 6 |
+| SkinnedMeshRenderer | 11 | **72** |
+| SpriteRenderer | 14 | **76** |
+| ParticleSystemRenderer | 47 | **26** |
+| RectTransform | 16 | **11** |
+| CanvasRenderer | 17 | **13** |
+| BoxCollider | 5 | **9** |
+
+抽表两段（都从该 build 的 `luna_engine.js` 现场取，别凭记忆）：
+
+```python
+# 1) 类型名表（本例 186 项）：锚点回退到 '['，括号配平后 json.loads
+i = s.find('"UnityEngine.Transform","UnityEngine.MonoBehaviour"')
+j = s.rfind('[', 0, i)
+names = json.loads(s[j:k+1])          # names[5] == 'UnityEngine.MeshRenderer'
+
+# 2) DTO 字段表
+re.compile(r'"([^"]*Components\.MeshRenderer[^"]*)":\{([^{}]*)\}')
+# → {additionalVertexStreams:0, enabled:2, sharedMaterial:3, sharedMaterials:5, ...}
+```
+
+**池长自校验（强烈建议）**：`对象总数 − 含 RectTransform 的对象数` 必须等于
+`scene.transform_ids.length`。本例 `2931 − 76 = 2855`，池 `pool used 2855/2855`，
+一个槽都没错位。等式成立就说明后序 DFS 规则对本 build 依然有效。
+
+本 build 另外两处入口变化：
+
+- **贴图是 base64 data URI**，不是 `data-src122`：`<img id="assets/bundles/-1/xxx.png" src="data:image/png;base64,...">`，
+  按 `data:image/[a-z]+;base64,` 正则直接解即可（126 张 0 失败）。
+- **落点写成 `.then( function( blob ) { window.blobs[ "path" ] = ... } )`**，中间还夹着
+  `window.blobs = window.blobs || {}`。用「向后 9000 字符找 `window.X[...]=`」会先命中那句无下标赋值，
+  全部落成 `unknown_*`。正确做法只认带下标的赋值：
+  `re.search(r'window\.(jsons|blobs|sounds)\[\s*"([^"]+)"\s*\]', s[m.end():m.end()+400])`，
+  落空且这段里有 `__soyooLoadScript` 才是引擎本体。
+
+**规模基线**：4.0 MB HTML → 2931 对象 / 71 mesh / 86 material / 123 texture / 107 sprite / 17 mp3 /
+GLB 2.03 MB / 372,539 三角面；27 个 `enabled=0` 的 MeshRenderer 要跳过；本 build 无描边第二 pass。
+
+
 ## Cocos Creator 3.x 包补充流程
 
 部分 DataEye  playable 使用 Cocos Creator 3.8.5+，资源以 assetmap 形式打包（非 Luna 私有格式）。处理流程如下：
