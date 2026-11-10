@@ -23,6 +23,14 @@ html,body{height:100%;background:var(--night);color:var(--ink);font-family:"Noto
 .pad{position:fixed;bottom:22px;width:84px;height:84px;border-radius:50%;background:rgba(240,233,220,.08);border:1px solid rgba(240,233,220,.2);display:grid;place-items:center;font-size:30px;color:var(--ink);touch-action:none}
 .pad.on{background:rgba(240,233,220,.2)}
 #padL{left:22px}#padR{left:122px}
+#padA{right:22px;font-size:18px;letter-spacing:.1em;font-family:"Noto Serif SC",serif;background:rgba(255,200,120,.1);border-color:rgba(255,210,150,.35)}
+#padA.ready{background:rgba(255,200,120,.28);border-color:rgba(255,220,170,.85);box-shadow:0 0 22px rgba(255,190,110,.55)}
+.idea{position:fixed;transform:translate(-50%,-50%);font-family:"Noto Serif SC","Songti SC",serif;font-weight:700;font-size:clamp(17px,3.8vw,26px);color:#eef1ff;text-shadow:0 0 10px rgba(140,165,255,.95),0 0 28px rgba(90,110,220,.8);white-space:nowrap;cursor:pointer;opacity:0;transition:opacity .35s;padding:10px 14px;touch-action:none;z-index:3}
+.idea.on{opacity:1;animation:wob 1.1s ease-in-out infinite}
+@keyframes wob{0%,100%{margin-top:0;filter:none}50%{margin-top:-6px;filter:brightness(1.25)}}
+.idea span{display:inline-block;transition:transform .55s cubic-bezier(.15,.7,.3,1),opacity .55s}
+.idea.broke{animation:none}
+.idea.broke span{opacity:0}
 .overlay{position:fixed;inset:0;display:grid;place-items:center;background:rgba(5,7,14,.78);text-align:center;padding:24px;z-index:5}
 .overlay.hide{display:none}
 #end{background:linear-gradient(180deg,rgba(5,7,14,0) 0%,rgba(5,7,14,.15) 40%,rgba(5,7,14,.6) 100%)}
@@ -38,17 +46,17 @@ html,body{height:100%;background:var(--night);color:var(--ink);font-family:"Noto
 </head>
 <body>
 <div id="view"></div>
-<div class="hud"><div><b>失眠</b> · 灰盒 v0.1</div><div>03:07 · 被念头抓住 <b id="caught">0</b> 次</div></div>
+<div class="hud"><div><b>失眠</b> · v0.2</div><div>03:07 · 被念头抓住 <b id="caught">0</b> 次</div></div>
 <div class="bar"><i id="prog"></i></div>
 <div class="state" id="state"></div>
 <div class="flash" id="flash"></div>
-<div class="pad" id="padL">‹</div><div class="pad" id="padR">›</div>
+<div class="pad" id="padL">‹</div><div class="pad" id="padR">›</div><div class="pad" id="padA">拍</div>
 
 <div class="overlay" id="intro"><div class="card">
   <div class="t">03:07 AM</div>
   <h1>失眠</h1>
   <p>你又醒了。房间大得不像话。<br>走到窗帘那边，等天亮。</p>
-  <p class="k">← → 或屏幕左下角按钮移动<br>窗帘一亮，就有东西要来了。躲到东西底下</p>
+  <p class="k">← → 或屏幕左下角按钮移动<br>窗帘一亮，就有东西要来了。躲到东西底下<br>念头冒出来时，按空格或“拍”把它拍碎，碎光会逼退影子</p>
   <button id="go">开始</button>
 </div></div>
 <div class="overlay hide" id="end"><div class="card">
@@ -332,6 +340,10 @@ loadProp('models/shadow-hand.glb', 2.7, w => {
 const blob = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: radialTexture(), color: 0x000000, transparent: true, opacity: 0.75, depthWrite: false, blending: THREE.NormalBlending }));
 blob.rotation.x = -Math.PI / 2; blob.position.y = 0.012; blob.renderOrder = 1; scene.add(blob);
 let lie = 0; // 0 站着 → 1 趴在床底下
+// 拍碎念头时炸开的暖光：一盏点光 + 一圈叠加的光晕面片
+const burst = new THREE.PointLight(0xffc982, 0, 9, 1.6); burst.userData.t = 0; scene.add(burst);
+const halo = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: radialTexture(), color: 0xffcf8a, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
+halo.renderOrder = 3; scene.add(halo);
 const catGlow = new THREE.PointLight(0xfff0c8, 0.6, 2.4, 2); catGlow.position.set(0, 1.6, 0.9); cat.add(catGlow); // 保证玩家看得见自己
 
 /* ================= 车灯 ================= */
@@ -362,6 +374,7 @@ const BEAM_R = 2.6; // 地面上被照到的半径
 const G = {
   phase: 'intro', x: LEVEL.start, dir: 1, input: 0, checkpoint: LEVEL.start, caught: 0, t: 0, hidden: false, hideName: '',
   beam: { mode: 'idle', timer: 3.5, x: 0 }, stun: 0,
+  shield: 0, swipe: 0, shake: 0, ideaCD: 0,
 };
 window.__game = G;
 
@@ -371,7 +384,8 @@ function nextInterval() { return 2.0 + Math.random() * 1.2; }
 
 /* ================= 输入 ================= */
 const keys = new Set();
-addEventListener('keydown', e => { keys.add(e.key); if (G.phase === 'intro' && (e.key === 'Enter' || e.key === ' ')) start(); });
+addEventListener('keydown', e => { keys.add(e.key); if (G.phase === 'intro' && (e.key === 'Enter' || e.key === ' ')) { start(); return; }
+  if (!e.repeat && (e.key === ' ' || e.key === 'j' || e.key === 'J' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W')) { e.preventDefault(); smash(); } });
 addEventListener('keyup', e => keys.delete(e.key));
 for (const [id, d] of [['padL', -1], ['padR', 1]]) {
   const el = document.getElementById(id);
@@ -379,6 +393,7 @@ for (const [id, d] of [['padL', -1], ['padR', 1]]) {
   const off = e => { e.preventDefault(); el.classList.remove('on'); delete el.dataset.d; };
   el.addEventListener('pointerdown', on); el.addEventListener('pointerup', off); el.addEventListener('pointerleave', off); el.addEventListener('pointercancel', off);
 }
+document.getElementById('padA').addEventListener('pointerdown', e => { e.preventDefault(); smash(); });
 function readInput() {
   let v = 0;
   if (keys.has('ArrowLeft') || keys.has('a') || keys.has('A')) v -= 1;
@@ -395,6 +410,7 @@ const MSG = {
   'sweep': ['它在找你。', '影子伸出了手。', '光扫过来了，躲起来。'],
   'sweep-hide': ['它的手指，从你身边经过。', '再等一下。', '别出声。'],
   'stun': ['一个念头抓住了你。', '你又想多了。'],
+  'shield': ['碎了。', '它缩回去了。', '光是你的。', '想多了，就拍碎它。'],
 };
 function setState(text, cls) { const s = $('state'); s.textContent = text; s.className = 'state' + (text ? ' on ' + (cls || '') : ''); }
 function thought() {
@@ -405,8 +421,52 @@ function thought() {
   requestAnimationFrame(() => { el.style.opacity = 1; el.style.transform = 'translateY(-26px) scale(1.06)'; });
   setTimeout(() => { el.style.opacity = 0; }, 1300); setTimeout(() => el.remove(), 1800);
 }
+/* ================= 念头：拍碎它，碎光逼退影子 =================
+ * 危险来临、香蕉猫又暴露在外面时，头顶会冒出一个念头（最多一个，3.5 秒后自己散掉）。
+ * 拍碎它 → 一团暖光炸开，影子手缩回地板下，3 秒内光照不到你。
+ * 太早拍，光会在手到之前熄掉；所以最好等手靠近再出手。 */
+let idea = null; // { el, t, text }
+function spawnIdea() {
+  const text = LEVEL.thoughts[Math.floor(Math.random() * LEVEL.thoughts.length)];
+  const el = document.createElement('div'); el.className = 'idea';
+  el.innerHTML = [...text].map(c => `<span>${c}</span>`).join('');
+  el.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); smash(); });
+  document.body.appendChild(el); requestAnimationFrame(() => el.classList.add('on'));
+  idea = { el, t: 3.5 }; $('padA').classList.add('ready'); sfx('idea');
+}
+function killIdea(broke) {
+  if (!idea) return; const el = idea.el; idea = null; $('padA').classList.remove('ready');
+  if (broke) {
+    el.classList.add('broke');
+    for (const sp of el.querySelectorAll('span')) { const a = Math.random() * Math.PI * 2, d = 60 + Math.random() * 90; sp.style.transform = `translate(${Math.cos(a) * d}px,${Math.sin(a) * d}px) rotate(${(Math.random() - 0.5) * 540}deg) scale(${0.4 + Math.random() * 0.5})`; }
+  } else el.classList.remove('on');
+  setTimeout(() => el.remove(), 700);
+}
+function smash() {
+  if (G.phase !== 'play' || G.stun > 0 || G.swipe > 0) return;
+  G.swipe = 0.32; // 挥爪
+  if (!idea) { sfx('whiff'); return; }
+  killIdea(true); G.smashed = (G.smashed || 0) + 1;
+  G.shield = 3.0; G.shake = 1; burst.userData.t = 0.7; sfx('smash');
+  $('flash').style.background = 'radial-gradient(circle at 50% 62%,rgba(255,214,150,.35),rgba(255,190,110,0) 60%)';
+  $('flash').style.opacity = 1; setTimeout(() => { $('flash').style.opacity = 0; }, 120);
+}
+// ---- 声音：WebAudio 现场合成，不用音频文件 ----
+let AC = null;
+function audio() { try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === 'suspended') AC.resume(); } catch (e) { AC = null; } }
+function sfx(kind) {
+  if (!AC) return; const t0 = AC.currentTime, out = AC.createGain(); out.connect(AC.destination);
+  const tone = (f0, f1, dur, vol, type = 'sine') => { const o = AC.createOscillator(), g = AC.createGain(); o.type = type; o.frequency.setValueAtTime(f0, t0); o.frequency.exponentialRampToValueAtTime(f1, t0 + dur); g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur); o.connect(g); g.connect(out); o.start(t0); o.stop(t0 + dur); };
+  const noise = (dur, vol, freq, q) => { const n = AC.createBuffer(1, AC.sampleRate * dur, AC.sampleRate), d = n.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 3); const src = AC.createBufferSource(); src.buffer = n; const f = AC.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = freq; f.Q.value = q; const g = AC.createGain(); g.gain.value = vol; src.connect(f); f.connect(g); g.connect(out); src.start(t0); };
+  if (kind === 'smash') { noise(0.35, 0.9, 3200, 0.7); noise(0.18, 0.6, 900, 1.2); tone(140, 45, 0.28, 0.5); tone(880, 1760, 0.4, 0.06, 'triangle'); }
+  else if (kind === 'idea') { tone(330, 290, 0.6, 0.05, 'triangle'); tone(495, 440, 0.6, 0.025); }
+  else if (kind === 'whiff') { noise(0.12, 0.25, 1400, 0.8); }
+  else if (kind === 'caught') { tone(220, 70, 0.6, 0.25, 'sawtooth'); }
+}
+
 function start() {
-  Object.assign(G, { phase: 'play', x: LEVEL.start, checkpoint: LEVEL.start, caught: 0, t: 0, stun: 0, beam: { mode: 'idle', timer: 3.2, x: 0 } });
+  Object.assign(G, { phase: 'play', x: LEVEL.start, checkpoint: LEVEL.start, caught: 0, smashed: 0, t: 0, stun: 0, shield: 0, swipe: 0, shake: 0, ideaCD: 0, beam: { mode: 'idle', timer: 3.2, x: 0 } });
+  killIdea(); audio();
   $('caught').textContent = 0; $('intro').classList.add('hide'); $('end').classList.add('hide');
 }
 $('go').onclick = start; $('again').onclick = start;
@@ -435,30 +495,35 @@ function step(dt) {
     else if (B.mode === 'warn' && B.timer <= 0) { B.mode = 'sweep'; B.timer = 3.0; B.dir = Math.random() < 0.5 ? -1 : 1; B.x = B.dir < 0 ? 42 : -2; }
     else if (B.mode === 'sweep') { const k = 1 - B.timer / 3.0; B.x = B.dir < 0 ? 42 - k * 44 : -2 + k * 44; if (B.timer <= 0) { B.mode = 'idle'; B.timer = nextInterval(); } }
     // 被照到
-    if (B.mode === 'sweep' && G.stun <= 0 && !G.hidden && Math.abs(B.x - G.x) < BEAM_R) {
-      G.caught++; $('caught').textContent = G.caught; G.stun = 1.2; thought(); thought();
+    if (B.mode === 'sweep' && G.stun <= 0 && G.shield <= 0 && !G.hidden && Math.abs(B.x - G.x) < BEAM_R) {
+      G.caught++; $('caught').textContent = G.caught; G.stun = 1.2; thought(); thought(); killIdea(); sfx('caught');
       $('flash').style.opacity = 1; setTimeout(() => $('flash').style.opacity = 0, 180);
     }
+    // 念头：危险中、暴露在外、手正在靠近时冒出来
+    G.shield = Math.max(0, G.shield - dt); G.swipe = Math.max(0, G.swipe - dt); G.ideaCD = Math.max(0, G.ideaCD - dt);
+    const danger = (B.mode === 'warn') || (B.mode === 'sweep' && Math.abs(B.x - G.x) < 14 && (B.x - G.x) * B.dir < 1.5);
+    if (!idea && danger && !G.hidden && G.stun <= 0 && G.shield <= 0 && G.ideaCD <= 0) { spawnIdea(); G.ideaCD = 1.2; }
+    if (idea) { idea.t -= dt; if (idea.t <= 0 || G.hidden) killIdea(); }
     // 终点
     if (G.x >= LEVEL.goal - 0.01) { win(); return; }
     // 提示
     // 提示文字：不报“车来了”，只写感觉。每次危险阶段开始时随机挑一句，阶段内不换
-    const key = G.stun > 0 ? 'stun' : B.mode + (G.hidden ? '-hide' : '');
+    const key = G.stun > 0 ? 'stun' : G.shield > 0 ? 'shield' : B.mode + (G.hidden ? '-hide' : '');
     if (key !== G.msgKey) { G.msgKey = key; const pool = MSG[key]; G.msg = pool ? pool[Math.floor(Math.random() * pool.length)] : ''; }
-    setState(G.msg, G.hidden || B.mode === 'idle' ? 'safe' : 'warn');
+    setState(G.msg, G.hidden || G.shield > 0 || B.mode === 'idle' ? 'safe' : 'warn');
     $('prog').style.width = ((G.x - LEVEL.start) / (LEVEL.goal - LEVEL.start) * 100).toFixed(1) + '%';
   }
   // ---- 表现 ----
   const B = G.beam, sweeping = B.mode === 'sweep', warn = B.mode === 'warn';
   beam.intensity = sweeping ? 14 : 0;
   beam.target.position.set(B.x, 0, 0);
-  cone.position.copy(beam.position); cone.lookAt(B.x, 0, 0); coneMat.uniforms.uOpacity.value = sweeping ? 0.55 : 0; coneMat.uniforms.uTime.value = G.t;
+  cone.position.copy(beam.position); cone.lookAt(B.x, 0, 0); coneMat.uniforms.uOpacity.value = sweeping ? (G.shield > 0 ? 0.18 : 0.55) : 0; coneMat.uniforms.uTime.value = G.t;
   for (const m of shaftMats) m.uniforms.uTime.value = G.t;
   if (dust) { dust.rotation.y = 0; dust.position.y = Math.sin(G.t * 0.3) * 0.15; dust.position.x = Math.sin(G.t * 0.2) * 0.3; }
-  spot.position.x = B.x; spot.material.opacity = sweeping ? 0.55 : 0;
-  if (hand) { // 预警时在窗边冒头，扫的时候贴着光斑追过来
-    const up = sweeping ? 1 : warn ? 0.5 : 0;
-    hand.userData.up = (hand.userData.up || 0) + (up - (hand.userData.up || 0)) * Math.min(1, dt * 4);
+  spot.position.x = B.x; spot.material.opacity = sweeping ? (G.shield > 0 ? 0.15 : 0.55) : 0;
+  if (hand) { // 预警时在窗边冒头，扫的时候贴着光斑追过来；被碎光烫到就缩回地板下
+    const up = G.shield > 0 ? 0 : sweeping ? 1 : warn ? 0.5 : 0;
+    hand.userData.up = (hand.userData.up || 0) + (up - (hand.userData.up || 0)) * Math.min(1, dt * (G.shield > 0 ? 9 : 4));
     hand.visible = hand.userData.up > 0.02;
     const dir = sweeping ? B.dir : -1;
     hand.position.x = sweeping ? B.x - dir * 2.2 : 40;           // 手腕落后光斑一截，指尖伸向光斑
@@ -476,9 +541,11 @@ function step(dt) {
   if (cat.userData.model && !window.__poseTest) { // 程序动画：放下手臂、走路摆腿摆手、尾巴晃、躲着时低头
     const ph = walking ? Math.sin(G.t * 12) : 0, idle = Math.sin(G.t * 2.2);
     const P = POSE;
+    const sw = G.swipe > 0 ? Math.sin((1 - G.swipe / 0.32) * Math.PI) : 0; // 挥爪：右手抬起往前拍
     for (const side of ['L', 'R']) {
-      poseBone('upper_arm' + side, P.armDown.axis, P.armDown.angle);
-      poseBone('upper_arm' + side, P.armSwing.axis, P.armSwing.amp * ph, true);
+      const s2 = side === 'R' ? sw : 0;
+      poseBone('upper_arm' + side, P.armDown.axis, P.armDown.angle * (1 - s2 * 1.9)); // 拍的时候手举过头
+      poseBone('upper_arm' + side, P.armSwing.axis, P.armSwing.amp * ph + s2 * 0.6, true);
     }
     poseBone('thighL', P.legL, P.legAmp * ph);
     poseBone('thighR', P.legR, -P.legAmp * ph);
@@ -489,7 +556,8 @@ function step(dt) {
   lie += ((G.hidden && G.hideName === '床底下' ? 1 : 0) - lie) * Math.min(1, dt * 7);
   if (cat.userData.model) {
     const a = lie * 1.2, wb = cat.userData.body;
-    wb.rotation.x = a; wb.position.y += (cat.userData.halfDepth || 0.3) * Math.sin(a) * 0.4;
+    const sw2 = G.swipe > 0 ? Math.sin((1 - G.swipe / 0.32) * Math.PI) : 0; // 拍的瞬间整个身子往前一扑、跳一下
+    wb.rotation.x = a + sw2 * 0.35; wb.position.y += (cat.userData.halfDepth || 0.3) * Math.sin(a) * 0.4 + sw2 * 0.18;
   }
   cat.scale.y = G.hidden && lie < 0.5 ? 0.82 : 1;
   blob.position.x = G.x + Math.sin(cat.rotation.y) * lie * 0.55; blob.position.z = Math.cos(cat.rotation.y) * lie * 0.45;
@@ -499,7 +567,17 @@ function step(dt) {
   catGlow.intensity += ((G.hidden ? 0 : 1.2) - catGlow.intensity) * Math.min(1, dt * 5);
   cat.visible = !(G.stun > 0 && Math.floor(G.stun * 10) % 2 === 0);
   camX += (G.x + (innerWidth < innerHeight ? 0.4 : 2) - camX) * Math.min(1, dt * 3);
-  camera.position.set(camX, 2.1, 8.4); camera.lookAt(camX, 1.8, -3); // 低机位、贴近香蕉猫，房间显得巨大
+  // 碎光、护身暖光、镜头震动
+  burst.userData.t = Math.max(0, burst.userData.t - dt);
+  const bk = burst.userData.t / 0.7;
+  burst.position.set(G.x, 2.2, 0.4); burst.intensity = bk * bk * 60 + (G.shield > 0 ? 2.5 * Math.min(1, G.shield) : 0);
+  halo.position.set(G.x, 1.4, 0.5); halo.scale.setScalar(1 + (1 - bk) * 7); halo.material.opacity = bk * 0.9;
+  halo.quaternion.copy(camera.quaternion);
+  G.shake = Math.max(0, G.shake - dt * 4);
+  const sh = G.shake * G.shake * 0.12;
+  camera.position.set(camX + (Math.random() - 0.5) * sh, 2.1 + (Math.random() - 0.5) * sh, 8.4); camera.lookAt(camX, 1.8, -3); // 低机位、贴近香蕉猫，房间显得巨大
+  // 念头跟着香蕉猫头顶走
+  if (idea) { const v = new THREE.Vector3(G.x, 2.15, 0).project(camera); idea.el.style.left = ((v.x + 1) / 2 * innerWidth) + 'px'; idea.el.style.top = ((1 - v.y) / 2 * innerHeight) + 'px'; }
   if (G.phase === 'end') { // 天亮：背景、环境光、月光一起转成暖色晨光
     const k = Math.min(1, (G.endT += dt) / 2.5);
     scene.background.setRGB(0.05 + k * 0.53, 0.08 + k * 0.38, 0.15 + k * 0.22); scene.fog.color.copy(scene.background);
@@ -511,7 +589,7 @@ function win() {
   G.phase = 'end'; G.endT = 0; setState('');
   const m = Math.floor(G.t / 60), s = Math.round(G.t % 60);
   $('endTime').textContent = `06:12 AM · 用时 ${m ? m + ' 分 ' : ''}${s} 秒`;
-  $('endText').innerHTML = G.caught ? `今晚被念头抓住了 ${G.caught} 次。<br>没关系，天还是亮了。` : '一次都没被念头抓住。<br>今晚算是睡着了。';
+  $('endText').innerHTML = (G.smashed ? `拍碎了 ${G.smashed} 个念头。<br>` : '') + (G.caught ? `今晚被念头抓住了 ${G.caught} 次。<br>没关系，天还是亮了。` : '一次都没被念头抓住。<br>今晚算是睡着了。');
   setTimeout(() => $('end').classList.remove('hide'), 2800);
 }
 renderer.setAnimationLoop(() => { const dt = Math.min(clock.getDelta(), 0.05); step(dt); renderer.render(scene, camera); });
