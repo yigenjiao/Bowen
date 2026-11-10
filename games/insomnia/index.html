@@ -82,28 +82,98 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.45; // 整体提亮，暗部也要看得清东西
 document.getElementById('view').appendChild(renderer.domElement);
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x070a12);
-scene.fog = new THREE.Fog(0x070a12, 28, 70);
+scene.background = new THREE.Color(0x0d1526);
+scene.fog = new THREE.Fog(0x0d1526, 14, 52); // 带一点蓝的薄雾，远处的东西退进雾里，有空间感
 const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 200);
 
-const hemi = new THREE.HemisphereLight(0x4a5a8f, 0x120d0a, 1.6); scene.add(hemi);
-const moon = new THREE.DirectionalLight(0x7d8fd0, 1.1); // 窗外的冷月光
+const hemi = new THREE.HemisphereLight(0x6a80c0, 0x1c1610, 2.3); scene.add(hemi);
+const moon = new THREE.DirectionalLight(0x8fa3e8, 1.8); // 窗外的冷月光
 moon.position.set(46, 18, 10); moon.target.position.set(20, 0, -3); moon.castShadow = true;
 moon.shadow.mapSize.set(1024, 512); Object.assign(moon.shadow.camera, { left: -30, right: 30, top: 16, bottom: -6, far: 80 });
 scene.add(moon); scene.add(moon.target);
-const night = new THREE.PointLight(0xffb36b, 3.5, 10, 0); // 床头小夜灯
+const night = new THREE.PointLight(0xffb36b, 22, 10, 2); // 按距离衰减，只暖床头一小块，不在镜头前的地板上反出亮斑 // 床头小夜灯
 night.position.set(2.2, 3.2, -1.5); scene.add(night); // 点光源阴影要渲染 6 次，手机上太贵，不开
 
 const gray = (c = 0x5c6170, r = 0.9) => new THREE.MeshStandardMaterial({ color: c, roughness: r });
 const box = (w, h, d, mat, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); m.castShadow = m.receiveShadow = true; scene.add(m); return m; };
 
+/* ---- 木地板贴图（程序生成，不用外部图片） ---- */
+function plankTexture() {
+  const c = document.createElement('canvas'); c.width = 512; c.height = 512; const g = c.getContext('2d');
+  const rows = 8, h = 512 / rows;
+  for (let r = 0; r < rows; r++) {
+    let x = -((r * 173) % 400);
+    while (x < 512) {
+      const w = 260 + ((r * 97 + x) % 180), v = 70 + ((r * 31 + Math.abs(x)) % 30);
+      g.fillStyle = `rgb(${v + 18},${v},${v - 14})`; g.fillRect(x, r * h, w, h);
+      for (let k = 0; k < 14; k++) { g.strokeStyle = `rgba(30,20,12,${0.05 + (k % 3) * 0.03})`; g.beginPath(); const yy = r * h + 4 + k * (h - 8) / 14; g.moveTo(x, yy); g.bezierCurveTo(x + w * 0.3, yy + 2, x + w * 0.6, yy - 2, x + w, yy + 1); g.stroke(); }
+      g.fillStyle = 'rgba(15,10,6,.85)'; g.fillRect(x, r * h, 2, h); x += w;
+    }
+    g.fillStyle = 'rgba(12,8,5,.9)'; g.fillRect(0, r * h, 512, 2);
+  }
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(10, 4); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+  return t;
+}
+/* ---- 体积光：用叠加混合的半透明面片假装光柱，中间亮、两边和末端化开，带一点浮尘闪动 ---- */
+const shaftMats = [];
+function shaftMaterial(color, strength) {
+  const m = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false,
+    uniforms: { uTime: { value: 0 }, uOpacity: { value: strength }, uColor: { value: new THREE.Color(color) } },
+    vertexShader: 'varying vec2 vUv; varying vec3 vN; varying vec3 vV; void main(){ vUv = uv; vec4 mv = modelViewMatrix * vec4(position,1.0); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }',
+    fragmentShader: `uniform float uTime; uniform float uOpacity; uniform vec3 uColor; varying vec2 vUv; varying vec3 vN; varying vec3 vV;
+      void main(){
+        float across = sin(vUv.x * 3.14159);                 // 横向：中间亮，两边化开
+        float along = smoothstep(0.0, 0.25, vUv.y) * (1.0 - smoothstep(0.55, 1.0, vUv.y)); // 纵向：两端都淡出
+        float face = pow(abs(dot(vN, vV)), 0.6);             // 侧着看时变薄，不露出面片的硬边
+        float dust = 0.85 + 0.15 * sin(vUv.y * 40.0 + uTime * 0.7) * sin(vUv.x * 23.0 - uTime * 0.4);
+        gl_FragColor = vec4(uColor, uOpacity * across * across * along * face * dust);
+      }`,
+  });
+  shaftMats.push(m); return m;
+}
+/* ---- 窗户：后墙上的高窗 + 百叶窗缝里漏下来的几道月光 ---- */
+function addWindowLight() {
+  for (const wx of [-1.5, 23]) {
+    const pane = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 7), new THREE.MeshBasicMaterial({ color: 0x5f78b8, fog: false }));
+    pane.position.set(wx, 7.5, -8.7); scene.add(pane);
+    for (let i = 0; i < 4; i++) box(3.4, 0.25, 0.3, gray(0x1a2034), wx, 4.5 + i * 2, -8.6); // 窗棂
+    for (let i = 0; i < 3; i++) { // 三道斜下来的光柱，落在地板上
+      const len = 15, sh = new THREE.Mesh(new THREE.PlaneGeometry(1.1 + i * 0.25, len), shaftMaterial(0x7f9cff, 0.5 - i * 0.1));
+      const top = new THREE.Vector3(wx - 0.9 + i * 0.9, 9, -8.5), bot = new THREE.Vector3(wx + 3.5 + i * 1.4, 0, 1.5);
+      sh.position.copy(top).add(bot).multiplyScalar(0.5);
+      const yA = top.clone().sub(bot).normalize(), zA = new THREE.Vector3(0, 0, 1).addScaledVector(yA, -yA.z).normalize(), xA = new THREE.Vector3().crossVectors(yA, zA);
+      sh.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(xA, yA, zA)); // 面片沿光线方向拉长，正面朝镜头
+      sh.scale.y = top.distanceTo(bot) / len; scene.add(sh);
+    }
+    const pool = new THREE.Mesh(new THREE.PlaneGeometry(9, 5), new THREE.MeshBasicMaterial({ map: radialTexture(), color: 0x6f8ce0, transparent: true, opacity: 0.35, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
+    pool.rotation.x = -Math.PI / 2; pool.position.set(wx + 5, 0.015, -0.5); scene.add(pool); // 地板上被照亮的一片
+  }
+  // 浮尘：光里慢慢飘的小颗粒
+  const n = 500, pos = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) { const wx = i % 2 ? -1.5 : 23, t = Math.random(); pos[i * 3] = wx + t * 5 - 1 + (Math.random() - 0.5) * 3; pos[i * 3 + 1] = 9 - t * 9 + (Math.random() - 0.5); pos[i * 3 + 2] = -8.5 + t * 10 + (Math.random() - 0.5) * 2; } // 只在光柱里飘
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  dust = new THREE.Points(geo, new THREE.PointsMaterial({ size: 0.035, color: 0xaebfff, transparent: true, opacity: 0.4, depthWrite: false, blending: THREE.AdditiveBlending }));
+  scene.add(dust);
+}
+let dust = null;
+let _radial = null;
+function radialTexture() {
+  if (_radial) return _radial;
+  const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+  const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.45, 'rgba(255,255,255,.45)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 128, 128); _radial = new THREE.CanvasTexture(c); return _radial;
+}
+
 function buildRoom() {
   // 地板与墙
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(80, 30), gray(0x3a2f27, 0.8));
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(80, 30), new THREE.MeshStandardMaterial({ map: plankTexture(), color: 0x9a8070, roughness: 0.55, metalness: 0.0 })); // 打过蜡的木地板，能反出光斑
   floor.rotation.x = -Math.PI / 2; floor.position.set(22, 0, -4); floor.receiveShadow = true; scene.add(floor);
-  box(80, 24, 0.5, gray(0x232a3d), 22, 12, -9);
+  box(80, 24, 0.5, gray(0x2c3653), 22, 12, -9);
+  addWindowLight();
   // 床（巨大）：床板离地 1.7，香蕉猫能从下面走过
   const bedM = gray(0x4a5168);
   box(12, 0.6, 7, bedM, 11, 2.0, -3.5);                       // 床板
@@ -234,21 +304,34 @@ const shadowMat = new THREE.ShaderMaterial({
     }`,
 });
 let hand = null; // 影子手：预警时在窗边冒头，车灯扫的时候跟着光斑伸过去
-loadProp('models/shadow-hand.glb', 3.2, w => {
+loadProp('models/shadow-hand.glb', 2.7, w => {
   w.position.set(40, -3, -1.6); w.visible = false;
   w.traverse(o => { if (o.isMesh) { o.material = shadowMat; o.castShadow = false; o.receiveShadow = false; o.renderOrder = 2; } });
 }).then(w => { hand = w; window.__hand = w; });
 
-const catGlow = new THREE.PointLight(0xfff0c8, 0.6, 3.2, 0); catGlow.position.set(0, 1.4, 1.2); cat.add(catGlow); // 保证玩家看得见自己
+const catGlow = new THREE.PointLight(0xfff0c8, 0.6, 2.4, 2); catGlow.position.set(0, 1.6, 0.9); cat.add(catGlow); // 保证玩家看得见自己
 
 /* ================= 车灯 ================= */
 const beam = new THREE.SpotLight(0xcfe0ff, 0, 70, 0.3, 0.45, 0);
 beam.castShadow = true; beam.shadow.mapSize.set(512, 512);
 beam.position.set(44, 9, -3); scene.add(beam); scene.add(beam.target);
 const coneGeo = new THREE.ConeGeometry(4.2, 14, 32, 1, true); coneGeo.translate(0, -7, 0); coneGeo.rotateX(-Math.PI / 2);
-const cone = new THREE.Mesh(coneGeo, new THREE.MeshBasicMaterial({ color: 0xbfd4ff, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending }));
+// 光锥：体积光 shader，中心亮、边缘和远端化开，不再是一个半透明白模
+const coneMat = new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false,
+  uniforms: { uTime: { value: 0 }, uOpacity: { value: 0 }, uColor: { value: new THREE.Color(0xc6d8ff) } },
+  vertexShader: 'varying vec2 vUv; varying vec3 vN; varying vec3 vV; void main(){ vUv = uv; vec4 mv = modelViewMatrix * vec4(position,1.0); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }',
+  fragmentShader: `uniform float uTime; uniform float uOpacity; uniform vec3 uColor; varying vec2 vUv; varying vec3 vN; varying vec3 vV;
+    void main(){
+      float core = pow(abs(dot(normalize(vN), normalize(vV))), 2.2);  // 光锥中轴最亮，轮廓处消失
+      float fall = pow(vUv.y, 1.4);                                  // 离车灯越远越淡（uv.y=1 在灯口）
+      float dust = 0.88 + 0.12 * sin(vUv.y * 60.0 - uTime * 3.0) * sin(vUv.x * 50.0 + uTime);
+      gl_FragColor = vec4(uColor, uOpacity * core * fall * dust);
+    }`,
+});
+const cone = new THREE.Mesh(coneGeo, coneMat);
 scene.add(cone);
-const spot = new THREE.Mesh(new THREE.CircleGeometry(2.8, 32), new THREE.MeshBasicMaterial({ color: 0xdfe9ff, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }));
+const spot = new THREE.Mesh(new THREE.PlaneGeometry(7, 7), new THREE.MeshBasicMaterial({ map: radialTexture(), color: 0xdfe9ff, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); // 边缘柔和的光斑
 spot.rotation.x = -Math.PI / 2; spot.position.y = 0.02; scene.add(spot);
 const BEAM_R = 2.6; // 地面上被照到的半径
 
@@ -298,7 +381,7 @@ function start() {
 $('go').onclick = start; $('again').onclick = start;
 
 /* ================= 循环 ================= */
-function resize() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h); camera.aspect = w / h; camera.fov = w < h ? 58 : 40; camera.updateProjectionMatrix(); }
+function resize() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h); camera.aspect = w / h; camera.fov = w < h ? 62 : 42; camera.updateProjectionMatrix(); }
 addEventListener('resize', resize); resize();
 
 const clock = new THREE.Clock();
@@ -338,15 +421,17 @@ function step(dt) {
   const B = G.beam, sweeping = B.mode === 'sweep', warn = B.mode === 'warn';
   beam.intensity = sweeping ? 14 : 0;
   beam.target.position.set(B.x, 0, 0);
-  cone.position.copy(beam.position); cone.lookAt(B.x, 0, 0); cone.material.opacity = sweeping ? 0.11 : 0;
-  spot.position.x = B.x; spot.material.opacity = sweeping ? 0.3 : 0;
+  cone.position.copy(beam.position); cone.lookAt(B.x, 0, 0); coneMat.uniforms.uOpacity.value = sweeping ? 0.55 : 0; coneMat.uniforms.uTime.value = G.t;
+  for (const m of shaftMats) m.uniforms.uTime.value = G.t;
+  if (dust) { dust.rotation.y = 0; dust.position.y = Math.sin(G.t * 0.3) * 0.15; dust.position.x = Math.sin(G.t * 0.2) * 0.3; }
+  spot.position.x = B.x; spot.material.opacity = sweeping ? 0.55 : 0;
   if (hand) { // 预警时在窗边冒头，扫的时候贴着光斑追过来
     const up = sweeping ? 1 : warn ? 0.5 : 0;
     hand.userData.up = (hand.userData.up || 0) + (up - (hand.userData.up || 0)) * Math.min(1, dt * 4);
     hand.visible = hand.userData.up > 0.02;
     const dir = sweeping ? B.dir : -1;
     hand.position.x = sweeping ? B.x - dir * 2.2 : 40;           // 手腕落后光斑一截，指尖伸向光斑
-    hand.position.y = -3.2 + hand.userData.up * 3.2 + Math.sin(G.t * 7) * 0.05 * hand.userData.up;
+    hand.position.y = -2.7 + hand.userData.up * 2.7 + Math.sin(G.t * 7) * 0.05 * hand.userData.up;
     hand.rotation.y = dir * Math.PI / 2 + Math.sin(G.t * 2.1) * 0.12; // 模型指尖朝 +Z，转到行进方向
     hand.rotation.z = Math.sin(G.t * 3) * 0.06;
     shadowMat.uniforms.uTime.value = G.t; shadowMat.uniforms.uOpacity.value = Math.min(1, hand.userData.up);
@@ -371,15 +456,15 @@ function step(dt) {
   }
   cat.scale.y = G.hidden ? 0.82 : 1; // 躲着时缩一点
   // 跟身灯不投影，一直亮着会让香蕉猫在床底、阴影里也发亮。躲起来时熄掉，开阔处留一点轮廓光
-  catGlow.intensity += ((G.hidden ? 0 : 0.6) - catGlow.intensity) * Math.min(1, dt * 5);
+  catGlow.intensity += ((G.hidden ? 0 : 1.2) - catGlow.intensity) * Math.min(1, dt * 5);
   cat.visible = !(G.stun > 0 && Math.floor(G.stun * 10) % 2 === 0);
-  camX += (G.x + (innerWidth < innerHeight ? 0.8 : 3) - camX) * Math.min(1, dt * 3);
-  camera.position.set(camX, 3.2, 13.5); camera.lookAt(camX, 2.2, -2);
+  camX += (G.x + (innerWidth < innerHeight ? 0.4 : 2) - camX) * Math.min(1, dt * 3);
+  camera.position.set(camX, 2.1, 8.4); camera.lookAt(camX, 1.8, -3); // 低机位、贴近香蕉猫，房间显得巨大
   if (G.phase === 'end') { // 天亮：背景、环境光、月光一起转成暖色晨光
     const k = Math.min(1, (G.endT += dt) / 2.5);
-    scene.background.setRGB(0.03 + k * 0.55, 0.04 + k * 0.42, 0.07 + k * 0.3); scene.fog.color.copy(scene.background);
-    hemi.intensity = 1.6 + k * 2.2; hemi.color.setRGB(0.29 + k * 0.7, 0.35 + k * 0.5, 0.56 + k * 0.1);
-    moon.color.setRGB(0.49 + k * 0.51, 0.56 + k * 0.3, 0.82 - k * 0.3); moon.intensity = 1.1 + k * 2.4;
+    scene.background.setRGB(0.05 + k * 0.53, 0.08 + k * 0.38, 0.15 + k * 0.22); scene.fog.color.copy(scene.background);
+    hemi.intensity = 2.3 + k * 1.5; hemi.color.setRGB(0.29 + k * 0.7, 0.35 + k * 0.5, 0.56 + k * 0.1);
+    moon.color.setRGB(0.49 + k * 0.51, 0.56 + k * 0.3, 0.82 - k * 0.3); moon.intensity = 1.8 + k * 1.7;
   }
 }
 function win() {
