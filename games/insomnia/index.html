@@ -13,10 +13,15 @@ html,body{height:100%;background:var(--night);color:var(--ink);font-family:"Noto
 #view canvas{display:block;width:100%;height:100%}
 .hud{position:fixed;top:12px;left:14px;right:14px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;font-size:12px;color:var(--muted);font-family:ui-monospace,monospace;letter-spacing:.04em}
 .hud b{color:var(--ink);font-weight:500}
-#clock{display:inline-block;transition:transform .25s,color .25s,text-shadow .25s}
-#clock.pulse{transform:scale(1.45);color:#ffd79a;text-shadow:0 0 12px rgba(255,190,110,.95)}
+#clock{display:inline-block}
+#sleep{display:inline-flex;gap:4px;vertical-align:middle}
+#sleep i{width:8px;height:8px;border-radius:50%;border:1px solid rgba(240,233,220,.45);transition:background .3s,box-shadow .3s,transform .25s}
+#sleep i.on{background:#ffd79a;border-color:#ffd79a;box-shadow:0 0 8px rgba(255,190,110,.9)}
+#sleep i.pulse{transform:scale(1.8)}
+.fade{position:fixed;inset:0;background:#05070e;opacity:0;pointer-events:none;transition:opacity 2.6s ease-in;z-index:2}
+.zzz{position:fixed;font-family:"Noto Serif SC",serif;font-weight:700;color:#e9e3ff;text-shadow:0 0 12px rgba(150,160,255,.8);pointer-events:none;opacity:0;transition:opacity .6s,transform 2.4s ease-out;z-index:3}
 .spark{position:fixed;width:7px;height:7px;margin:-3px 0 0 -3px;border-radius:50%;background:#ffe2b0;box-shadow:0 0 10px 3px rgba(255,190,110,.9);pointer-events:none;z-index:4;transition:left .7s cubic-bezier(.5,0,.8,.6),top .7s cubic-bezier(.2,.6,.4,1),opacity .2s,transform .7s}
-.plus{position:fixed;right:14px;top:30px;font-family:"Noto Serif SC",serif;font-size:13px;color:#ffd79a;text-shadow:0 0 10px rgba(255,180,100,.8);pointer-events:none;opacity:0;transition:opacity .3s,transform 1.2s ease-out;z-index:4}
+.plus{position:fixed;right:60px;top:30px;font-family:"Noto Serif SC",serif;font-size:13px;color:#ffd79a;text-shadow:0 0 10px rgba(255,180,100,.8);pointer-events:none;opacity:0;transition:opacity .3s,transform 1.2s ease-out;z-index:4}
 .bar{position:fixed;top:36px;left:14px;right:14px;height:2px;background:rgba(240,233,220,.12);pointer-events:none}
 .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#3b4a7a,#f3c27a)}
 .state{position:fixed;left:50%;bottom:132px;transform:translateX(-50%);font-family:"Noto Serif SC","Songti SC",serif;font-size:16px;letter-spacing:.18em;color:rgba(232,226,214,.88);text-shadow:0 0 14px rgba(0,0,0,.9),0 0 30px rgba(90,120,220,.35);opacity:0;transition:opacity .9s ease;pointer-events:none;white-space:nowrap}
@@ -50,22 +55,22 @@ html,body{height:100%;background:var(--night);color:var(--ink);font-family:"Noto
 </head>
 <body>
 <div id="view"></div>
-<div class="hud"><div><b>失眠</b> · v0.2</div><div><b id="clock">03:07</b> · 被念头抓住 <b id="caught">0</b> 次</div></div>
+<div class="hud"><div><b>失眠</b> · v0.2</div><div><b id="clock">03:07</b> · 睡意 <span id="sleep"></span> · 被抓 <b id="caught">0</b></div></div>
 <div class="bar"><i id="prog"></i></div>
 <div class="state" id="state"></div>
-<div class="flash" id="flash"></div>
+<div class="flash" id="flash"></div><div class="fade" id="fade"></div>
 <div class="pad" id="padL">‹</div><div class="pad" id="padR">›</div><div class="pad" id="padA">拍</div>
 
 <div class="overlay" id="intro"><div class="card">
   <div class="t">03:07 AM</div>
   <h1>失眠</h1>
-  <p>你又醒了。房间大得不像话。<br>走到窗帘那边，等天亮。</p>
+  <p>你又醒了。房间大得不像话。<br>走到窗边的猫窝，或者把念头都拍碎。<br>睡着就好。</p>
   <p class="k">← → 或屏幕左下角按钮移动<br>窗帘一亮，就有东西要来了。躲到东西底下<br>念头冒出来时，按空格或“拍”把它拍碎，碎光会逼退影子</p>
   <button id="go">开始</button>
 </div></div>
 <div class="overlay hide" id="end"><div class="card">
   <div class="t" id="endTime"></div>
-  <h1>天亮了</h1>
+  <h1>睡着了</h1>
   <p id="endText"></p>
   <button id="again">再来一次</button>
 </div></div>
@@ -229,7 +234,12 @@ function buildRoom() {
   // 杂物（不能躲，纯氛围）
   box(1.2, 0.08, 2.2, gray(0x111318), 24.5, 0.04, 0.6).material.emissive = new THREE.Color(0x1d2a55); // 掉在地上的手机
   LEVEL.dresser = box(3, 9, 2, gray(0x40475a), 30, 4.5, -7);     // 衣柜
-  // 窗与窗帘（终点）
+  // 猫窝（终点）：窗边一个软垫，走到这里就能蜷起来睡
+  const bedW = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.6, 0.35, 28), new THREE.MeshStandardMaterial({ color: 0xc58a5a, roughness: 1 }));
+  bedW.position.set(41.2, 0.17, 0.1); bedW.receiveShadow = true; scene.add(bedW);
+  const rimW = new THREE.Mesh(new THREE.TorusGeometry(1.45, 0.38, 12, 32), new THREE.MeshStandardMaterial({ color: 0xe8b98a, roughness: 1 }));
+  rimW.rotation.x = -Math.PI / 2; rimW.position.set(41.2, 0.45, 0.1); rimW.castShadow = rimW.receiveShadow = true; scene.add(rimW);
+  // 窗与窗帘
   box(0.4, 10, 6, gray(0x2b3248), 43.5, 7, -5);
   LEVEL.curtain = [box(1.2, 14, 1, gray(0x5a4f7a, 1), 42, 7, -1.5), box(1.2, 14, 1, gray(0x5a4f7a, 1), 42, 7, -6.5)];
   for (const c of LEVEL.curtain) c.material = c.material.clone();
@@ -378,7 +388,7 @@ const BEAM_R = 2.6; // 地面上被照到的半径
 const G = {
   phase: 'intro', x: LEVEL.start, dir: 1, input: 0, checkpoint: LEVEL.start, caught: 0, t: 0, hidden: false, hideName: '',
   beam: { mode: 'idle', timer: 3.5, x: 0 }, stun: 0,
-  shield: 0, swipe: 0, shake: 0, ideaCD: 0, hitstop: 0, mins: 0, dawn: 0,
+  shield: 0, swipe: 0, shake: 0, ideaCD: 0, hitstop: 0, sleep: 0, dawn: 0, sleepT: 0,
 };
 window.__game = G;
 
@@ -446,25 +456,28 @@ function killIdea(broke) {
   } else el.classList.remove('on');
   setTimeout(() => el.remove(), 700);
 }
-// 时钟：每拍碎一个念头，天亮提前 12 分钟
-const MINS_PER_SMASH = 12;
+// 睡意：每拍碎一个念头 +1，攒满 6 个就地睡着；走到窗边的猫窝也能睡着
+const SLEEP_NEED = 6;
 function clockText(add) { const t = 3 * 60 + 7 + add, h = Math.floor(t / 60), m = t % 60; return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0'); }
+function drawSleep(pulse) { $('sleep').innerHTML = Array.from({ length: SLEEP_NEED }, (_, i) => `<i class="${i < G.sleep ? 'on' : ''}${pulse && i === G.sleep - 1 ? ' pulse' : ''}"></i>`).join(''); if (pulse) setTimeout(() => drawSleep(false), 260); }
 function sparksToClock(x, y) {
-  const to = $('clock').getBoundingClientRect(), tx = to.left + to.width / 2, ty = to.top + to.height / 2;
+  const dots = $('sleep').children, target = dots[Math.min(G.sleep, SLEEP_NEED - 1)] || $('sleep');
+  const to = target.getBoundingClientRect(), tx = to.left + to.width / 2, ty = to.top + to.height / 2;
   for (let i = 0; i < 12; i++) {
     const d = document.createElement('div'); d.className = 'spark';
     const a = Math.random() * Math.PI * 2, r = 20 + Math.random() * 50;
     d.style.left = (x + Math.cos(a) * r) + 'px'; d.style.top = (y + Math.sin(a) * r) + 'px'; document.body.appendChild(d);
-    setTimeout(() => { d.style.left = tx + 'px'; d.style.top = ty + 'px'; d.style.transform = 'scale(.4)'; }, 60 + i * 25); // 先炸开，再一颗颗飞进时钟
+    setTimeout(() => { d.style.left = tx + 'px'; d.style.top = ty + 'px'; d.style.transform = 'scale(.4)'; }, 60 + i * 25); // 先炸开，再一颗颗飞进睡意
     setTimeout(() => d.remove(), 900 + i * 25);
   }
   setTimeout(() => {
-    G.mins += MINS_PER_SMASH; $('clock').textContent = clockText(G.mins);
-    $('clock').classList.add('pulse'); setTimeout(() => $('clock').classList.remove('pulse'), 260);
-    const p = document.createElement('div'); p.className = 'plus'; p.textContent = `天亮提前 ${MINS_PER_SMASH} 分钟`; document.body.appendChild(p);
+    if (G.phase !== 'play') return;
+    G.sleep = Math.min(SLEEP_NEED, G.sleep + 1); drawSleep(true);
+    const p = document.createElement('div'); p.className = 'plus'; p.textContent = G.sleep >= SLEEP_NEED ? '困了……' : '睡意 +1'; document.body.appendChild(p);
     requestAnimationFrame(() => { p.style.opacity = 1; p.style.transform = 'translateY(14px)'; });
     setTimeout(() => { p.style.opacity = 0; }, 1300); setTimeout(() => p.remove(), 1700);
     sfx('tick');
+    if (G.sleep >= SLEEP_NEED) setTimeout(() => fallAsleep('meter'), 600);
   }, 800);
 }
 function smash() {
@@ -494,8 +507,8 @@ function sfx(kind) {
 }
 
 function start() {
-  Object.assign(G, { phase: 'play', x: LEVEL.start, checkpoint: LEVEL.start, caught: 0, smashed: 0, t: 0, stun: 0, shield: 0, swipe: 0, shake: 0, ideaCD: 0, hitstop: 0, mins: 0, dawn: 0, beam: { mode: 'idle', timer: 3.2, x: 0 } });
-  killIdea(); audio(); $('clock').textContent = clockText(0);
+  Object.assign(G, { phase: 'play', x: LEVEL.start, checkpoint: LEVEL.start, caught: 0, smashed: 0, t: 0, stun: 0, shield: 0, swipe: 0, shake: 0, ideaCD: 0, hitstop: 0, sleep: 0, dawn: 0, sleepT: 0, beam: { mode: 'idle', timer: 3.2, x: 0 } });
+  killIdea(); audio(); $('clock').textContent = clockText(0); drawSleep(false); $('fade').style.opacity = 0;
   $('caught').textContent = 0; $('intro').classList.add('hide'); $('end').classList.add('hide');
 }
 $('go').onclick = start; $('again').onclick = start;
@@ -534,12 +547,13 @@ function step(dt) {
     if (!idea && danger && !G.hidden && G.stun <= 0 && G.shield <= 0 && G.ideaCD <= 0) { spawnIdea(); G.ideaCD = 1.2; }
     if (idea) { idea.t -= dt; if (idea.t <= 0 || G.hidden) killIdea(); }
     // 终点
-    if (G.x >= LEVEL.goal - 0.01) { win(); return; }
+    if (G.x >= LEVEL.goal - 0.01) { fallAsleep('bed'); return; }
     // 提示
     // 提示文字：不报“车来了”，只写感觉。每次危险阶段开始时随机挑一句，阶段内不换
     const key = G.stun > 0 ? 'stun' : G.shield > 0 ? 'shield' : B.mode + (G.hidden ? '-hide' : '');
     if (key !== G.msgKey) { G.msgKey = key; const pool = MSG[key]; G.msg = pool ? pool[Math.floor(Math.random() * pool.length)] : ''; }
     setState(G.msg, G.hidden || G.shield > 0 || B.mode === 'idle' ? 'safe' : 'warn');
+    $('clock').textContent = clockText(Math.floor(G.t));
     $('prog').style.width = ((G.x - LEVEL.start) / (LEVEL.goal - LEVEL.start) * 100).toFixed(1) + '%';
   }
   // ---- 表现 ----
@@ -579,10 +593,11 @@ function step(dt) {
     poseBone('thighL', P.legL, P.legAmp * ph);
     poseBone('thighR', P.legR, -P.legAmp * ph);
     poseBone('tail1', P.tail.axis, P.tail.amp * Math.sin(G.t * (walking ? 9 : 3)));
-    poseBone('head', P.headDown, (G.hidden && lie < 0.1 ? 0.35 : 0) - lie * 0.85 + idle * 0.03); // 趴下时抬头往前看
+    poseBone('head', P.headDown, (G.phase === 'sleep' || G.phase === 'end') ? lie * 0.5 + Math.sin(G.t * 1.2) * 0.02 : (G.hidden && lie < 0.1 ? 0.35 : 0) - lie * 0.85 + idle * 0.03); // 睡着时把头埋下去，轻轻起伏 // 趴下时抬头往前看
   }
   // 床底下：趴在地上；其他躲藏点：缩一点
-  lie += ((G.hidden && G.hideName === '床底下' ? 1 : 0) - lie) * Math.min(1, dt * 7);
+  const asleep = G.phase === 'sleep' || G.phase === 'end';
+  lie += ((asleep || (G.hidden && G.hideName === '床底下') ? 1 : 0) - lie) * Math.min(1, dt * (asleep ? 2.5 : 7));
   if (cat.userData.model) {
     const a = lie * 1.2, wb = cat.userData.body;
     const sw2 = G.swipe > 0 ? Math.sin((1 - G.swipe / 0.32) * Math.PI) : 0; // 拍的瞬间整个身子往前一扑、跳一下
@@ -594,7 +609,7 @@ function step(dt) {
   blob.material.opacity = cat.visible === false ? 0 : 0.7;
   // 跟身灯不投影，一直亮着会让香蕉猫在床底、阴影里也发亮。躲起来时熄掉，开阔处留一点轮廓光
   // 拍碎越多：香蕉猫自己越亮，房间和窗光一点点转暖（天快亮了）
-  G.dawn += (Math.min(1, G.mins / 120) - G.dawn) * Math.min(1, dt * 1.5);
+  G.dawn += (G.sleep / SLEEP_NEED - G.dawn) * Math.min(1, dt * 1.5);
   catGlow.color.setRGB(1, 0.94 - G.dawn * 0.1, 0.78 - G.dawn * 0.25);
   catGlow.intensity += ((G.hidden ? 0 : 1.2 + G.dawn * 2.5) - catGlow.intensity) * Math.min(1, dt * 5);
   if (G.phase === 'play') {
@@ -613,23 +628,39 @@ function step(dt) {
   halo.quaternion.copy(camera.quaternion);
   G.shake = Math.max(0, G.shake - dt * 4);
   const sh = G.shake * G.shake * 0.12;
-  camera.position.set(camX + (Math.random() - 0.5) * sh, 2.1 + (Math.random() - 0.5) * sh, 8.4); camera.lookAt(camX, 1.8, -3); // 低机位、贴近香蕉猫，房间显得巨大
+  const zk = (G.phase === 'sleep' || G.phase === 'end') ? Math.min(1, G.sleepT / 3.2) : 0, ze = zk * zk * (3 - 2 * zk); // 睡着时镜头慢慢推近、压低
+  camera.position.set(camX + (Math.random() - 0.5) * sh, 2.1 - ze * 0.8 + (Math.random() - 0.5) * sh, 8.4 - ze * 3.4); camera.lookAt(camX, 1.8 - ze * 1.0, -3); // 低机位、贴近香蕉猫，房间显得巨大
   // 念头跟着香蕉猫头顶走
   if (idea) { const v = new THREE.Vector3(G.x, 2.15, 0).project(camera); idea.el.style.left = ((v.x + 1) / 2 * innerWidth) + 'px'; idea.el.style.top = ((1 - v.y) / 2 * innerHeight) + 'px'; }
-  if (G.phase === 'end') { // 天亮：背景、环境光、月光一起转成暖色晨光
-    const k = Math.min(1, (G.endT += dt) / 2.5);
-    scene.background.setRGB(0.05 + k * 0.53, 0.08 + k * 0.38, 0.15 + k * 0.22); scene.fog.color.copy(scene.background);
-    hemi.intensity = 2.3 + k * 1.5; hemi.color.setRGB(0.29 + k * 0.7, 0.35 + k * 0.5, 0.56 + k * 0.1);
-    moon.color.setRGB(0.49 + k * 0.51, 0.56 + k * 0.3, 0.82 - k * 0.3); moon.intensity = 1.8 + k * 1.7;
+  if (G.phase === 'end') G.sleepT += dt;
+  if (G.phase === 'sleep') { // 睡着：灯慢慢暗下去，飘起 Zzz
+    G.sleepT += dt; G.t += dt;
+    hemi.intensity = Math.max(0.6, hemi.intensity - dt * 0.5);
+    if (G.sleepT > (G.zzzAt || 0.6)) { G.zzzAt = G.sleepT + 0.9; zzz(); }
   }
+}
+function zzz() {
+  const v = new THREE.Vector3(G.x + 0.3, 1.2, 0.4).project(camera), el = document.createElement('div'); el.className = 'zzz';
+  el.textContent = 'z'; el.style.fontSize = (16 + Math.random() * 14) + 'px';
+  el.style.left = ((v.x + 1) / 2 * innerWidth) + 'px'; el.style.top = ((1 - v.y) / 2 * innerHeight) + 'px'; document.body.appendChild(el);
+  requestAnimationFrame(() => { el.style.opacity = 0.9; el.style.transform = `translate(${20 + Math.random() * 30}px,-90px)`; });
+  setTimeout(() => { el.style.opacity = 0; }, 1800); setTimeout(() => el.remove(), 2500);
+}
+function fallAsleep(how) {
+  if (G.phase !== 'play') return;
+  G.phase = 'sleep'; G.sleepT = 0; G.zzzAt = 0.8; G.how = how; killIdea(); setState(''); G.beam.mode = 'idle';
+  if (G.hitstop) G.hitstop = 0;
+  setTimeout(() => { $('fade').style.opacity = 0.82; }, 900);
+  setTimeout(win, 3400);
 }
 function win() {
   G.phase = 'end'; G.endT = 0; setState('');
+  const when = clockText(Math.floor(G.t));
   const m = Math.floor(G.t / 60), s = Math.round(G.t % 60);
-  $('endTime').textContent = `06:12 AM · 用时 ${m ? m + ' 分 ' : ''}${s} 秒`;
-  const early = G.mins ? `<br>天亮早了 ${G.mins} 分钟。` : '';
-  $('endText').innerHTML = (G.smashed ? `拍碎了 ${G.smashed} 个念头。${early}<br>` : '') + (G.caught ? `今晚被念头抓住了 ${G.caught} 次。<br>没关系，天还是亮了。` : '一次都没被念头抓住。<br>今晚算是睡着了。');
-  setTimeout(() => $('end').classList.remove('hide'), 2800);
+  $('endTime').textContent = `${when} AM · 用时 ${m ? m + ' 分 ' : ''}${s} 秒`;
+  const where = G.how === 'meter' ? '念头都拍碎了，<br>你在地板上就睡着了。' : '你走到了窗边的猫窝，<br>蜷起来，睡着了。';
+  $('endText').innerHTML = where + '<br><br>' + `拍碎了 ${G.smashed || 0} 个念头，被抓住 ${G.caught} 次。`;
+  $('end').classList.remove('hide');
 }
 renderer.setAnimationLoop(() => { let dt = Math.min(clock.getDelta(), 0.05); if (G.hitstop > 0) { G.hitstop -= dt; dt = 0.0005; } step(dt); renderer.render(scene, camera); });
 </script>
