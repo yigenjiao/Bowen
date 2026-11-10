@@ -15,10 +15,10 @@ html,body{height:100%;background:var(--night);color:var(--ink);font-family:"Noto
 .hud b{color:var(--ink);font-weight:500}
 .bar{position:fixed;top:36px;left:14px;right:14px;height:2px;background:rgba(240,233,220,.12);pointer-events:none}
 .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#3b4a7a,#f3c27a)}
-.state{position:fixed;left:50%;bottom:118px;transform:translateX(-50%);font-size:13px;padding:6px 14px;border-radius:999px;background:rgba(7,10,18,.6);border:1px solid rgba(240,233,220,.15);opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
+.state{position:fixed;left:50%;bottom:132px;transform:translateX(-50%);font-family:"Noto Serif SC","Songti SC",serif;font-size:16px;letter-spacing:.18em;color:rgba(232,226,214,.88);text-shadow:0 0 14px rgba(0,0,0,.9),0 0 30px rgba(90,120,220,.35);opacity:0;transition:opacity .9s ease;pointer-events:none;white-space:nowrap}
 .state.on{opacity:1}
-.state.warn{border-color:rgba(160,190,255,.6);color:#cfe0ff}
-.state.safe{border-color:rgba(127,176,105,.6);color:#bfe3a8}
+.state.warn{color:#d6e2ff}
+.state.safe{color:rgba(214,206,190,.7)}
 .thought{position:fixed;pointer-events:none;font-weight:700;color:#fff;text-shadow:0 0 18px rgba(120,150,255,.9);font-size:clamp(18px,4.5vw,30px);opacity:0;transition:opacity .25s,transform 1.4s ease-out;white-space:nowrap}
 .pad{position:fixed;bottom:22px;width:84px;height:84px;border-radius:50%;background:rgba(240,233,220,.08);border:1px solid rgba(240,233,220,.2);display:grid;place-items:center;font-size:30px;color:var(--ink);touch-action:none}
 .pad.on{background:rgba(240,233,220,.2)}
@@ -48,7 +48,7 @@ html,body{height:100%;background:var(--night);color:var(--ink);font-family:"Noto
   <div class="t">03:07 AM</div>
   <h1>失眠</h1>
   <p>你又醒了。房间大得不像话。<br>走到窗帘那边，等天亮。</p>
-  <p class="k">← → 或屏幕左下角按钮移动<br>窗帘一亮，车灯就要扫过来了，躲到东西底下</p>
+  <p class="k">← → 或屏幕左下角按钮移动<br>窗帘一亮，就有东西要来了。躲到东西底下</p>
   <button id="go">开始</button>
 </div></div>
 <div class="overlay hide" id="end"><div class="card">
@@ -168,26 +168,44 @@ function radialTexture() {
   g.fillStyle = gr; g.fillRect(0, 0, 128, 128); _radial = new THREE.CanvasTexture(c); return _radial;
 }
 
+/* ---- 地板光泽：用一个很小的假环境（暗蓝底 + 几块窗光）生成反射贴图，便宜，手机也跑得动 ---- */
+function floorEnv() {
+  const es = new THREE.Scene(); es.background = new THREE.Color(0x0a1020);
+  const lit = (c, w, h, x, y, z) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: c, side: THREE.DoubleSide })); m.position.set(x, y, z); m.lookAt(0, 0, 0); es.add(m); };
+  lit(0x6f8fe0, 3, 6, -4, 5, -8); lit(0x6f8fe0, 3, 6, 6, 5, -8); lit(0x4a5f9a, 20, 4, 0, 9, 0); lit(0xffb070, 1.2, 1.2, -6, 2, -3);
+  const pm = new THREE.PMREMGenerator(renderer); const t = pm.fromScene(es, 0.02).texture; pm.dispose(); return t;
+}
+
 function buildRoom() {
   // 地板与墙
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(80, 30), new THREE.MeshStandardMaterial({ map: plankTexture(), color: 0x9a8070, roughness: 0.55, metalness: 0.0 })); // 打过蜡的木地板，能反出光斑
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(80, 30), new THREE.MeshStandardMaterial({ map: plankTexture(), color: 0xb09080, roughness: 0.32, metalness: 0.0, envMap: floorEnv(), envMapIntensity: 1.6 })); // 打过蜡的木地板，能反出光斑
   floor.rotation.x = -Math.PI / 2; floor.position.set(22, 0, -4); floor.receiveShadow = true; scene.add(floor);
   box(80, 24, 0.5, gray(0x2c3653), 22, 12, -9);
   addWindowLight();
   // 床（巨大）：床板离地 1.7，香蕉猫能从下面走过
   const bedM = gray(0x4a5168);
   box(12, 0.6, 7, bedM, 11, 2.0, -3.5);                       // 床板
-  for (const [x, z] of [[5.2, -0.3], [16.8, -0.3], [5.2, -6.7], [16.8, -6.7]]) box(0.5, 1.7, 0.5, bedM, x, 0.85, z);
+  for (const [x, z] of [[5.2, -1.0], [16.8, -1.0], [5.2, -6.7], [16.8, -6.7]]) box(0.5, 1.7, 0.5, bedM, x, 0.85, z);
   box(12, 1.6, 7, gray(0x6b7390), 11, 3.1, -3.5);             // 床垫
   const blanket = gray(0x7d6fa0, 1);                            // 被子起伏
   for (let i = 0; i < 6; i++) { const s = new THREE.Mesh(new THREE.SphereGeometry(1.6 + (i % 2) * 0.6, 16, 12), blanket); s.scale.set(1.3, 0.55, 2.2); s.position.set(6.5 + i * 1.8, 4.1, -3.5); s.castShadow = true; scene.add(s); }
-  box(0.6, 7, 7.4, bedM, 4.7, 3.5, -3.5);                      // 床头板
+  box(0.6, 7, 6.4, bedM, 4.7, 3.5, -4.0);                      // 床头板（前沿退到香蕉猫走的线后面，避免穿模）
   // 床头柜 + 小夜灯
   LEVEL.nightstand = box(3, 3.2, 3, gray(0x51473d), 2, 1.6, -5.5);
   box(0.5, 0.9, 0.5, gray(0xf3c27a), 2.2, 3.65, -5.2);
   // 拖鞋（可躲）
-  const slip = gray(0x8a6a8f);
-  LEVEL.hides[1].props = [box(2.2, 0.35, 1.6, slip, 21.5, 1.3, 0), box(2.2, 1.3, 0.25, slip, 21.5, 0.65, -0.75)];
+  const slip = new THREE.MeshStandardMaterial({ color: 0xc98fa8, roughness: 1, side: THREE.DoubleSide }); // 绒面拖鞋
+  const sole = box(3.8, 0.2, 2.1, new THREE.MeshStandardMaterial({ color: 0x8a5a6e, roughness: 0.9 }), 21.3, 0.1, -0.1);
+  // 鞋头朝 +x：侧面对着镜头，是一整块拱起的绒面；鞋口（-x 一侧）有一圈浅色绒边
+  const S = [1, 1.15, 1.05];
+  const capGeo = new THREE.CylinderGeometry(1.0, 1.0, 1.8, 24, 1, true, Math.PI, Math.PI); capGeo.rotateZ(-Math.PI / 2); capGeo.scale(...S);
+  const cap = new THREE.Mesh(capGeo, slip); cap.position.set(21.3, 0.2, -0.1);
+  const toeGeo = new THREE.SphereGeometry(1.0, 24, 12, Math.PI / 2, Math.PI, 0, Math.PI / 2); toeGeo.scale(...S);
+  const toe = new THREE.Mesh(toeGeo, slip); toe.position.set(22.2, 0.2, -0.1);
+  const rimGeo = new THREE.TorusGeometry(1.0, 0.1, 8, 24, Math.PI); rimGeo.rotateY(Math.PI / 2); rimGeo.scale(...S);
+  const rim = new THREE.Mesh(rimGeo, new THREE.MeshStandardMaterial({ color: 0xf2d6e0, roughness: 1 })); rim.position.set(20.4, 0.2, -0.1);
+  for (const o of [cap, toe, rim]) { o.castShadow = o.receiveShadow = true; scene.add(o); }
+  LEVEL.hides[1].props = [cap, toe, rim, sole];
   // 书堆（可躲：书搭成一个洞）
   const bk = [0x6d4f3a, 0x3f5a6b, 0x7a3f3f, 0x55613f];
   LEVEL.hides[2].props = [box(0.5, 1.4, 1.8, gray(bk[0]), 26.6, 0.7, 0), box(0.5, 1.4, 1.8, gray(bk[1]), 28.4, 0.7, 0)];
@@ -253,6 +271,7 @@ new GLTFLoader().loadAsync('models/banana-cat.glb').then(g => {
   });
   for (const c of [...cat.children]) if (!c.isLight) cat.remove(c);
   cat.add(wrap); cat.userData.body = wrap; cat.userData.baseY = 0; cat.userData.model = m;
+  cat.userData.halfDepth = (box.max.z - box.min.z) / 2 * k; // 趴下时用来把身体抬到地面上
   window.__rig = { rig, POSE, poseBone, THREE, cat };
 }).catch(e => console.warn('香蕉猫模型加载失败，继续用占位胶囊', e));
 
@@ -309,6 +328,10 @@ loadProp('models/shadow-hand.glb', 2.7, w => {
   w.traverse(o => { if (o.isMesh) { o.material = shadowMat; o.castShadow = false; o.receiveShadow = false; o.renderOrder = 2; } });
 }).then(w => { hand = w; window.__hand = w; });
 
+// 脚下的接触阴影：一块柔边的暗斑，跟着香蕉猫走，让它踩在地上而不是飘着
+const blob = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: radialTexture(), color: 0x000000, transparent: true, opacity: 0.75, depthWrite: false, blending: THREE.NormalBlending }));
+blob.rotation.x = -Math.PI / 2; blob.position.y = 0.012; blob.renderOrder = 1; scene.add(blob);
+let lie = 0; // 0 站着 → 1 趴在床底下
 const catGlow = new THREE.PointLight(0xfff0c8, 0.6, 2.4, 2); catGlow.position.set(0, 1.6, 0.9); cat.add(catGlow); // 保证玩家看得见自己
 
 /* ================= 车灯 ================= */
@@ -342,6 +365,7 @@ const G = {
 };
 window.__game = G;
 
+window.__G = G; // 方便调试和自动测试
 function hideAt(x) { return LEVEL.hides.find(h => x >= h.x0 && x <= h.x1); }
 function nextInterval() { return 2.0 + Math.random() * 1.2; }
 
@@ -365,6 +389,13 @@ function readInput() {
 
 /* ================= UI ================= */
 const $ = id => document.getElementById(id);
+const MSG = {
+  'warn': ['窗帘后面，有光在转弯。', '墙上的影子，慢慢变长了。', '床底下，有指甲刮过地板。', '有什么东西，醒了。'],
+  'warn-hide': ['别动。', '屏住呼吸。', '它还没看见你。'],
+  'sweep': ['它在找你。', '影子伸出了手。', '光扫过来了，躲起来。'],
+  'sweep-hide': ['它的手指，从你身边经过。', '再等一下。', '别出声。'],
+  'stun': ['一个念头抓住了你。', '你又想多了。'],
+};
 function setState(text, cls) { const s = $('state'); s.textContent = text; s.className = 'state' + (text ? ' on ' + (cls || '') : ''); }
 function thought() {
   const el = document.createElement('div'); el.className = 'thought';
@@ -411,10 +442,10 @@ function step(dt) {
     // 终点
     if (G.x >= LEVEL.goal - 0.01) { win(); return; }
     // 提示
-    if (G.stun > 0) setState('被念头抓住了', 'warn');
-    else if (B.mode === 'warn') setState(G.hidden ? '躲在' + G.hideName + '，别动' : '窗帘亮了，快躲起来', G.hidden ? 'safe' : 'warn');
-    else if (B.mode === 'sweep') setState(G.hidden ? '躲在' + G.hideName : '车灯扫过来了', G.hidden ? 'safe' : 'warn');
-    else setState(G.hidden ? '躲在' + G.hideName : '');
+    // 提示文字：不报“车来了”，只写感觉。每次危险阶段开始时随机挑一句，阶段内不换
+    const key = G.stun > 0 ? 'stun' : B.mode + (G.hidden ? '-hide' : '');
+    if (key !== G.msgKey) { G.msgKey = key; const pool = MSG[key]; G.msg = pool ? pool[Math.floor(Math.random() * pool.length)] : ''; }
+    setState(G.msg, G.hidden || B.mode === 'idle' ? 'safe' : 'warn');
     $('prog').style.width = ((G.x - LEVEL.start) / (LEVEL.goal - LEVEL.start) * 100).toFixed(1) + '%';
   }
   // ---- 表现 ----
@@ -437,9 +468,9 @@ function step(dt) {
     shadowMat.uniforms.uTime.value = G.t; shadowMat.uniforms.uOpacity.value = Math.min(1, hand.userData.up);
   }
   for (const c of LEVEL.curtain) c.material.emissive = new THREE.Color(warn ? 0x5a6ea8 : sweeping ? 0x2a3560 : 0x000000);
-  for (const h of LEVEL.hides) for (const p of (h.props || [])) p.material.opacity = (G.hideName === h.name) ? 0.35 : 1;
+  for (const h of LEVEL.hides) for (const p of (h.props || [])) p.material.opacity = (G.hideName === h.name) ? 0.55 : 1; // 躲进去时半透明，但还看得出是什么
   cat.position.set(G.x, 0, 0);
-  cat.rotation.y = cat.userData.model ? (G.dir > 0 ? 1.05 : -1.05) : (G.dir > 0 ? 0.5 : -0.5); // 模型半侧身朝行进方向，脸仍看得到
+  cat.rotation.y = cat.userData.model ? (G.dir > 0 ? 1.05 : -1.05) * (1 - lie) : (G.dir > 0 ? 0.5 : -0.5); // 模型半侧身朝行进方向，脸仍看得到
   const walking = G.phase === 'play' && G.input && G.stun <= 0;
   cat.userData.body.position.y = cat.userData.baseY + (walking ? Math.abs(Math.sin(G.t * 12)) * 0.05 : 0);
   if (cat.userData.model && !window.__poseTest) { // 程序动画：放下手臂、走路摆腿摆手、尾巴晃、躲着时低头
@@ -452,9 +483,18 @@ function step(dt) {
     poseBone('thighL', P.legL, P.legAmp * ph);
     poseBone('thighR', P.legR, -P.legAmp * ph);
     poseBone('tail1', P.tail.axis, P.tail.amp * Math.sin(G.t * (walking ? 9 : 3)));
-    poseBone('head', P.headDown, (G.hidden ? 0.35 : 0) + idle * 0.03);
+    poseBone('head', P.headDown, (G.hidden && lie < 0.1 ? 0.35 : 0) - lie * 0.85 + idle * 0.03); // 趴下时抬头往前看
   }
-  cat.scale.y = G.hidden ? 0.82 : 1; // 躲着时缩一点
+  // 床底下：趴在地上；其他躲藏点：缩一点
+  lie += ((G.hidden && G.hideName === '床底下' ? 1 : 0) - lie) * Math.min(1, dt * 7);
+  if (cat.userData.model) {
+    const a = lie * 1.2, wb = cat.userData.body;
+    wb.rotation.x = a; wb.position.y += (cat.userData.halfDepth || 0.3) * Math.sin(a) * 0.4;
+  }
+  cat.scale.y = G.hidden && lie < 0.5 ? 0.82 : 1;
+  blob.position.x = G.x + Math.sin(cat.rotation.y) * lie * 0.55; blob.position.z = Math.cos(cat.rotation.y) * lie * 0.45;
+  blob.scale.set(1.15 + lie * 0.9, 0.75 + lie * 0.35, 1); blob.rotation.z = 0;
+  blob.material.opacity = cat.visible === false ? 0 : 0.7;
   // 跟身灯不投影，一直亮着会让香蕉猫在床底、阴影里也发亮。躲起来时熄掉，开阔处留一点轮廓光
   catGlow.intensity += ((G.hidden ? 0 : 1.2) - catGlow.intensity) * Math.min(1, dt * 5);
   cat.visible = !(G.stun > 0 && Math.floor(G.stun * 10) % 2 === 0);
